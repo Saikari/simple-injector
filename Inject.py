@@ -1,7 +1,7 @@
 import ctypes
 import subprocess
 import mmap
-import vmprotect
+#import vmprotect
 import os
 import sys
 from . import CertificateGenerator
@@ -152,7 +152,7 @@ class Injector:
             dll_bytes = f.read()
     
         # Encode the DLL using VMProtect
-        encoded_dll_bytes = vmprotect.vmp_encode(dll_bytes)
+        #encoded_dll_bytes = vmprotect.vmp_encode(dll_bytes)
     
         # Allocate memory in the remote process
         size_of_image = len(encoded_dll_bytes)
