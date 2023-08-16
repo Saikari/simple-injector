@@ -134,15 +134,18 @@ class Injector:
         else:
             process_arch = "x86"
         
-        # Check the DLL architecture
-        dll_arch = get_dll_architecture(signed_dll_path)
-        if process_arch != dll_arch:
-            raise ValueError(f"The process architecture ({process_arch}) does not match the DLL architecture ({dll_arch}).")
 
         # Sign the DLL using the CertificateGenerator class
         cert_generator = CertificateGenerator(outFile="certificate.pem", inputFile="private_key.pem", domain="example.com", password="password", real=True, verify=True)
         cert_generator.GenerateCert("example.com", "inputFile.pem")
         signed_dll_path = cert_generator.certToFile("signed_dll.dll", path)
+
+
+        # Check the DLL architecture
+        dll_arch = get_dll_architecture(signed_dll_path)
+        if process_arch != dll_arch:
+            raise ValueError(f"The process architecture ({process_arch}) does not match the DLL architecture ({dll_arch}).")
+        
         
         # Read the DLL file into memory
         with open(signed_dll_path, "rb") as f:
