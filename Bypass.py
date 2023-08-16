@@ -5,6 +5,9 @@ import sys
 import time
 from typing import Optional
 from . import Injector
+
+PROCESS_ALL_ACCESS = 0x1F0FFF
+
 class Bypass:
     @staticmethod
     def SuspendProtection(hProcess: ctypes.wintypes.HANDLE, pid: int, protAddr: int) -> bool:
