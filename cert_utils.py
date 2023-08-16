@@ -120,8 +120,6 @@ def options():
     parser.add_argument("-Verify", help="Verifies a file's code sign certificate")
     parser.add_argument("-debug", action="store_true", help="Print debug statements")
     args = parser.parse_args()
-    global debugging
-    global debugWriter
     debugging = args.debug
     debugWriter = open(os.devnull, "w") if not debugging else sys.stdout
     return FlagOptions(args.outFile, args.inputFile, args.domain, args.password, args.real, args.verify)
