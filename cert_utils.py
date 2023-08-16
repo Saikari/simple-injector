@@ -2,11 +2,11 @@ import os
 import ssl
 import random
 import string
-import time
-import datetime
+from datetime import timedelta
 from cryptography import x509
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 from cryptography.x509.oid import NameOID
 from OpenSSL import crypto
 
@@ -127,5 +127,5 @@ class CertificateGenerator:
         parser.add_argument("-debug", action="store_true", help="Print debug statements")
         args = parser.parse_args()
         self.debugging = args.debug
-        self.debugWriter = open(os.devnull, "w") if not debugging else sys.stdout
-        return FlagOptions(args.outFile, args.inputFile, args.domain, args.password, args.real, args.verify)
+        self.debugWriter = open(os.devnull, "w") if not self.debugging else sys.stdout
+        return FlagOptions(args.O, args.I, args.Domain, args.Password, args.Real, args.Verify)
