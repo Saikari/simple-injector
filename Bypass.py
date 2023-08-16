@@ -101,7 +101,7 @@ class Bypass:
         time.sleep(ms / 1000.0)
 
     @staticmethod
-    def Attack(dll_path, process_name, process_window_name):
+    def Attack(dll_path, process_name, process_window_name) -> bool:
         syringe = Injector()
         isInjected = False
         while not isInjected:
