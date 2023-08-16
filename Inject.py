@@ -2,6 +2,7 @@ import ctypes
 import subprocess
 import mmap
 import vmprotect
+from CertificateGenerator import CertificateGenerator
 
 class Injector:
     PROC_ALL_ACCESS = (0x000F0000 | 0x00100000 | 0x00000FFF)
