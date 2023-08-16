@@ -2,6 +2,8 @@ import os
 import ssl
 import random
 import string
+import sys
+import socket
 from datetime import timedelta
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
