@@ -137,6 +137,6 @@ class Bypass:
             if Bypass.SuspendProtection(handle, dwProcID.value, process_dll_main_addr):
               if not isInjected:
                 isInjected = syringe.inject_dll(handle, dll_path, hwnd)
-            Bedge(20)
+            Bypass.Bedge(20)
         ctypes.windll.kernel32.TerminateProcess(ctypes.wintypes.HANDLE(-1), 0)
         return isInjected
