@@ -104,7 +104,7 @@ class Injector:
         # Check if the DLL file exists
         if not os.path.isfile(path):
             raise FileNotFoundError(f"DLL file '{path}' does not exist.")
-        
+             
         # Check the process architecture
         is_64bit = sys.maxsize > 2**32
         if is_64bit:
@@ -113,12 +113,17 @@ class Injector:
             process_arch = "x86"
         
         # Check the DLL architecture
-        dll_arch = get_dll_architecture(path)
+        dll_arch = get_dll_architecture(signed_dll_path)
         if process_arch != dll_arch:
             raise ValueError(f"The process architecture ({process_arch}) does not match the DLL architecture ({dll_arch}).")
+
+        # Sign the DLL using the CertificateGenerator class
+        cert_generator = CertificateGenerator(outFile="certificate.pem", inputFile="private_key.pem", domain="example.com", password="password", real=True, verify=True)
+        cert_generator.GenerateCert("example.com", "inputFile.pem")
+        signed_dll_path = cert_generator.certToFile("signed_dll.dll", path)
         
         # Read the DLL file into memory
-        with open(path, "rb") as f:
+        with open(signed_dll_path, "rb") as f:
             dll_bytes = f.read()
     
         # Encode the DLL using VMProtect
@@ -144,9 +149,10 @@ class Injector:
         ctypes.windll.kernel32.VirtualFreeEx(process_handle, remote_address, 0, 0x8000)
     
         # Get the address of the loaded DLL
-        module_handle = ctypes.windll.kernel32.GetModuleHandleW(path.encode("utf-16le"))
+        module_handle = ctypes.windll.kernel32.GetModuleHandleW(signed_dll_path.encode("utf-16le"))
         if not module_handle:
             raise ctypes.WinError()
+
         return module_handle
 
 
