@@ -3,12 +3,6 @@ from PyQt6.QtWidgets import QMainWindow, QListWidget, QListWidgetItem, QMessageB
 import psutil
 import ctypes
 from PyQt6.QtCore import Qt
-from cryptography.hazmat.primitives.asymmetric.utils import FlagOptions
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
-import rsa
-import ssl
-import socket
 
 class injectorMW(QMainWindow):
     def __init__(self):
