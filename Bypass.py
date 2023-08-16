@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from typing import Optional
-class Injector:
+class Bypass:
     @staticmethod
     def SuspendProtection(hProcess: ctypes.wintypes.HANDLE, pid: int, protAddr: int) -> bool:
         te32 = ctypes.Structure()
@@ -148,22 +148,22 @@ class Injector:
                 hwnd = ctypes.windll.user32.FindWindowW(process_window_name.encode("utf-16le"), None)
                 if hwnd == 0:
                     isInjected = False
-                    Injector.Bedge(1000)
+                    Bypass.Bedge(1000)
 
             dwProcID = wintypes.DWORD()
             while not ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(dwProcID)) or dwProcID.value == 0:
-                Injector.Bedge(1000)
+                Bypass.Bedge(1000)
 
             handle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value)
 
             # Restore bytes of these hooked function
-            Injector.Patch(Injector.GetLibraryProcAddress(b"ntdll.dll", b"LdrInitializeThunk"), b"\x40\x53\x48\x83\xEC\x20", 6, handle)
-            Injector.Patch(Injector.GetLibraryProcAddress(b"ntdll.dll", b"NtQueryAttributesFile"), b"\x4C\x8B\xD1\xB8\x3D\x00\x00\x00", 8, handle)
+            Bypass.Patch(Bypass.GetLibraryProcAddress(b"ntdll.dll", b"LdrInitializeThunk"), b"\x40\x53\x48\x83\xEC\x20", 6, handle)
+            Bypass.Patch(Bypass.GetLibraryProcAddress(b"ntdll.dll", b"NtQueryAttributesFile"), b"\x4C\x8B\xD1\xB8\x3D\x00\x00\x00", 8, handle)
 
             split_result = process_name.split(".")
             process_name_joined = ".".join(split_result[:-1])
           
-            process_dll_main_addr = Injector.GetModuleAddress(f"{process_name_joined}.dll", dwProcID.value)
+            process_dll_main_addr = Bypass.GetModuleAddress(f"{process_name_joined}.dll", dwProcID.value)
             if process_dll_main_addr == 0:
               print(f"{process_name_joined}.dll not found!")
               return isInjected
