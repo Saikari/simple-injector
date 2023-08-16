@@ -1,5 +1,6 @@
 import os
 import pytest
+from pytest import capsys
 from certificate_generator import CertificateGenerator
 
 @pytest.fixture
