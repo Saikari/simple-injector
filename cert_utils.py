@@ -21,15 +21,27 @@ class CertificateGenerator:
         self.debugging = False
         self.debugWriter = None
     def printDebug(self, format, *args):
-        if self.debugging:
-            output = "[DEBUG] " + format % args
-            self.debugWriter.write(output)
+        try:
+            if self.debugging:
+                output = "[DEBUG] " + format % args
+                self.debugWriter.write(output)
+        except Exception as e:
+            print("An error occurred during printDebug:", str(e))
+    
     def VarNumberLength(self, min, max):
-        num = random.randint(min, max)
-        return self.RandStringBytes(num)
+        try:
+            num = random.randint(min, max)
+            return self.RandStringBytes(num)
+        except Exception as e:
+            print("An error occurred during VarNumberLength:", str(e))
+    
     def RandStringBytes(self, n):
-        letters = string.ascii_letters + string.digits
-        return ''.join(random.choice(letters) for i in range(n))
+        try:
+            letters = string.ascii_letters + string.digits
+            return ''.join(random.choice(letters) for i in range(n))
+        except Exception as e:
+            print("An error occurred during RandStringBytes:", str(e))
+    
     def GenerateCert(self, domain, inputFile):
         try:
             rootKey = rsa.generate_private_key(public_exponent=65537, key_size=4096)
@@ -52,14 +64,25 @@ class CertificateGenerator:
             ])).not_valid_before(cert.not_valid_before).not_valid_after(cert.not_valid_after).serial_number(cert.serial_number).public_key(cert.public_key()).add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True).add_extension(x509.KeyUsage(digital_signature=True, key_cert_sign=True, key_encipherment=True, content_commitment=True, data_encipherment=True), critical=True).add_extension(x509.ExtendedKeyUsage([x509.ExtendedKeyUsageOID.SERVER_AUTH, x509.ExtendedKeyUsageOID.CLIENT_AUTH]), critical=True).sign(rootKey, hashes.SHA256(), default_backend())
             derBytes = SubjectTemplate.public_bytes(serialization.Encoding.DER)
             self.certToFile(domain+".pem", derBytes)
-        except (ssl.SSLError, ConnectionRefusedError, socket.gaierror, socket.timeout, Exception) as e:
+        except (ssl.SSLError, ConnectionRefusedError, socket.gaierror, socket.timeout) as e:
             print("An error occurred during certificate generation:", str(e))
+        except Exception as e:
+            print("An error occurred during certificate generation:", str(e))
+    
     def keyToFile(self, filename, key):
-        with open(filename, "wb") as file:
-            file.write(key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption()))
+        try:
+            with open(filename, "wb") as file:
+                file.write(key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8, encryption_algorithm=serialization.NoEncryption()))
+        except Exception as e:
+            print("An error occurred during keyToFile:", str(e))
+    
     def certToFile(self, filename, derBytes):
-        with open(filename, "wb") as file:
-            file.write(derBytes)
+        try:
+            with open(filename, "wb") as file:
+                file.write(derBytes)
+        except Exception as e:
+            print("An error occurred during certToFile:", str(e))
+    
     def GetCertificatesPEM(self, address):
         try:
             conn = ssl.create_connection((address, 443))
@@ -73,6 +96,9 @@ class CertificateGenerator:
             return b.decode(), None
         except (ssl.SSLError, ConnectionRefusedError, socket.gaierror, socket.timeout) as e:
             raise Exception(f"Error getting certificates for {address}: {str(e)}")
+        except Exception as e:
+            print("An error occurred during GetCertificatesPEM:", str(e))
+    
     def GeneratePFK(self, password, domain):
         try:
             key = crypto.PKey()
@@ -94,7 +120,8 @@ class CertificateGenerator:
             with open(domain+".pfx", "wb") as file:
                 file.write(pfx_data)
         except crypto.Error as e:
-            print("An error occurred during PFK")
+            print("An error occurred during GeneratePFK:", str(e))
+    
     def SignExecutable(self, password, pfx, filein, fileout):
         try:
             with open(pfx, 'rb') as f:
@@ -103,8 +130,8 @@ class CertificateGenerator:
             signed_data = crypto.sign(p12.get_privatekey(), p12.get_certificate(), open(filein, 'rb').read(), 'sha256')
             with open(fileout, 'wb') as f:
                 f.write(signed_data)
-        except Exception as e:
-            print("An error occurred during executable signing:", str(e))
+        except (crypto.Error, Exception) as e:
+            print("An error occurred during SignExecutable:", str(e))
     def Check(self, check):
         try:
             with open(check, 'rb') as f:
