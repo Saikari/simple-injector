@@ -106,7 +106,27 @@ class Injector:
     def inject_dll(self, path: str) -> ctypes.LPVOID:
         """Inject a DLL into the remote process."""
         self.path = path
+        
+        # Check if the DLL file exists
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"DLL file '{path}' does not exist.")
+        
+        # Check the process architecture
+        is_64bit = sys.maxsize > 2**32
+        if is_64bit:
+            process_arch = "x64"
+        else:
+            process_arch = "x86"
+        
+        # Check the DLL architecture
+        dll_arch = self.get_dll_architecture(path)
+        if process_arch != dll_arch:
+            raise ValueError(f"The process architecture ({process_arch}) does not match the DLL architecture ({dll_arch}).")
+        
+        # Inject the DLL
         return self.load_library(path.encode("utf-16le"))
+
+
 
     def call_from_injected(self, path: str, dll_addr: ctypes.LPVOID, function: str, args: bytes) -> None:
         """Call a function from the injected DLL."""
