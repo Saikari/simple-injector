@@ -1,5 +1,4 @@
 import os
-import subprocess
 import ssl
 import random
 import string
@@ -9,6 +8,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+from OpenSSL import crypto
 
 class FlagOptions:
     def __init__(self, outFile, inputFile, domain, password, real, verify):
@@ -80,16 +80,20 @@ def GetCertificatesPEM(address):
     return b.decode(), None
 
 def GeneratePFK(password, domain):
-    cmd = ["openssl", "pkcs12", "-export", "-out", domain+".pfx", "-inkey", domain+".key", "-in", domain+".pem", "-passin", "pass:"+password+"", "-passout", "pass:"+password+""]
-    subprocess.run(cmd, check=True)
+    p12 = crypto.PKCS12()
+    p12.set_privatekey(key)
+    p12.set_certificate(cert)
+    p12.set_ca_certificates([cert])
+    p12.set_friendlyname(domain)
+    pfx_data = p12.export(password)
+    with open(domain+".pfx", "wb") as file:
+        file.write(pfx_data)
 
 def SignExecutable(password, pfx, filein, fileout):
-    cmd = ["osslsigncode", "sign", "-pkcs12", pfx, "-in", filein, "-out", fileout, "-pass", password]
-    subprocess.run(cmd, check=True)
+    raise NotImplementedError("Signing executable with openssl module is not supported.")
 
 def Check(check):
-    cmd = ["osslsigncode", "verify", check]
-    subprocess.run(cmd, check=True)
+    raise NotImplementedError("Verifying code sign certificate with openssl module is not supported.")
 
 def options():
     import argparse
