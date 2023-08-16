@@ -1,6 +1,8 @@
 from subprocess import Popen
-from ctypes import (WinError, byref, c_int, c_long, c_ulong,
-                    create_string_buffer, windll)
+from ctypes import (
+    WinError, byref, c_int, c_long, c_ulong,
+    create_string_buffer, windll
+)
 
 
 class Injector:
@@ -11,7 +13,6 @@ class Injector:
 
     def __init__(self):
         self.kernel32 = windll.kernel32
-        self.user32 = windll.user32
         self.pid = c_ulong()
         self.handle = None
 
@@ -33,50 +34,64 @@ class Injector:
         self.handle = None
 
     def alloc_remote(self, buffer, size):
-        alloc = self.kernel32.VirtualAllocEx(self.handle, None, c_int(size),
-                                             self.MEM_CREATE, self.PAGE_EXECUTE_READWRITE)
+        alloc = self.kernel32.VirtualAllocEx(
+            self.handle, None, c_int(size),
+            self.MEM_CREATE, self.PAGE_EXECUTE_READWRITE
+        )
         if not alloc:
-            raise WinError('Unable to alloc remote.')
+            raise WinError('Unable to allocate remote memory.')
         self.write_memory(alloc, buffer)
         return alloc
 
     def free_remote(self, addr, size):
         if not self.kernel32.VirtualFreeEx(self.handle, addr, c_int(0), self.MEM_RELEASE):
-            raise WinError('Unable to free remote.')
+            raise WinError('Unable to free remote memory.')
 
     def get_address_from_module(self, module, function):
         module_addr = self.kernel32.GetModuleHandleA(module.encode("ascii"))
         if not module_addr:
             raise WinError('Unable to get module address.')
         function_addr = self.kernel32.GetProcAddress(module_addr, function.encode("ascii"))
-        if not module_addr:
+        if not function_addr:
             raise WinError('Unable to get function address.')
         return function_addr
 
     def create_remote_thread(self, function_addr, args):
         dll_addr = c_long(0)
         args_addr = self.alloc_remote(args, len(args))
-        thread = self.kernel32.CreateRemoteThread(self.handle, None, None, c_long(function_addr),
-                                                  c_long(args_addr), None, None)
+        thread = self.kernel32.CreateRemoteThread(
+            self.handle, None, None, c_long(function_addr),
+            c_long(args_addr), None, None
+        )
         if not thread:
-            raise WinError()
+            raise WinError('Unable to create remote thread.')
         if self.kernel32.WaitForSingleObject(thread, 0xFFFFFFFF) == 0xFFFFFFFF:
-            raise WinError()
+            raise WinError('Remote thread execution failed.')
         if not self.kernel32.GetExitCodeThread(thread, byref(dll_addr)):
-            raise WinError()
+            raise WinError('Unable to get exit code of remote thread.')
         self.free_remote(args_addr, len(args))
         return dll_addr.value
 
     def read_memory(self, addr, size):
+        old_protect = c_ulong()
+        if not self.kernel32.VirtualProtectEx(self.handle, addr, size, self.PAGE_EXECUTE_READWRITE, byref(old_protect)):
+            raise WinError('Unable to change memory protection.')
         buffer = create_string_buffer(size)
         if not self.kernel32.ReadProcessMemory(self.handle, c_long(addr), buffer, size, None):
             raise WinError('Unable to read memory.')
+        if not self.kernel32.VirtualProtectEx(self.handle, addr, size, old_protect, byref(old_protect)):
+            raise WinError('Unable to change memory protection.')
         return buffer
 
     def write_memory(self, addr, string):
         size = len(string)
+        old_protect = c_ulong()
+        if not self.kernel32.VirtualProtectEx(self.handle, addr, size, self.PAGE_EXECUTE_READWRITE, byref(old_protect)):
+            raise WinError('Unable to change memory protection.')
         if not self.kernel32.WriteProcessMemory(self.handle, addr, string, size, None):
             raise WinError('Unable to write memory.')
+        if not self.kernel32.VirtualProtectEx(self.handle, addr, size, old_protect, byref(old_protect)):
+            raise WinError('Unable to change memory protection.')
 
     def load_library(self, buffer):
         function_addr = self.get_address_from_module("kernel32.dll", "LoadLibraryA")
@@ -94,11 +109,10 @@ class Injector:
     def get_offset_of_exported_function(self, module, function):
         base_addr = self.kernel32.LoadLibraryA(module)
         if not base_addr:
-            raise WinError()
+            raise WinError('Unable to load library.')
         function_addr = self.kernel32.GetProcAddress(base_addr, function.encode("ascii"))
         if not function_addr:
-            raise WinError()
+            raise WinError('Unable to get function address.')
         if not self.kernel32.FreeLibrary(base_addr):
-            raise WinError()
+            raise WinError('Unable to free library.')
         return function_addr - base_addr
-
