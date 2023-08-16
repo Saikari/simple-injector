@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from typing import Optional
+from . import Injector
 class Bypass:
     @staticmethod
     def SuspendProtection(hProcess: ctypes.wintypes.HANDLE, pid: int, protAddr: int) -> bool:
@@ -96,51 +97,12 @@ class Bypass:
         return None
 
     @staticmethod
-    def Inject(handle: ctypes.wintypes.HANDLE, dllPath: str) -> bool:
-        if not os.path.isfile(dllPath):
-            return False
-
-        is_64bit = sys.maxsize > 2**32
-        if is_64bit:
-            process_arch = "x64"
-        else:
-            process_arch = "x86"
-
-        dll_arch = get_dll_architecture(dllPath)
-        if process_arch != dll_arch:
-            return False
-
-        with open(dllPath, "rb") as f:
-            dll_bytes = f.read()
-
-        encoded_dll_bytes = vmprotect.vmp_encode(dll_bytes)
-
-        size_of_image = len(encoded_dll_bytes)
-        remote_address = ctypes.windll.kernel32.VirtualAllocEx(handle, None, size_of_image, 0x3000, 0x40)
-        if not remote_address:
-            return False
-
-        if not ctypes.windll.kernel32.WriteProcessMemory(handle, remote_address, encoded_dll_bytes, size_of_image, None):
-            return False
-
-        thread_id = ctypes.c_ulong(0)
-        if not ctypes.windll.kernel32.CreateRemoteThread(handle, None, 0, remote_address, None, 0, ctypes.byref(thread_id)):
-            return False
-
-        if ctypes.windll.kernel32.WaitForSingleObject(thread_id, -1) == 0xFFFFFFFF:
-            return False
-
-        if not ctypes.windll.kernel32.VirtualFreeEx(handle, remote_address, 0, 0x8000):
-            return False
-
-        return True
-
-    @staticmethod
     def Bedge(ms: int) -> None:
         time.sleep(ms / 1000.0)
 
     @staticmethod
     def Attack(dll_path, process_name, process_window_name):
+        syringe = Injector()
         isInjected = False
         while True:
             hwnd = None
@@ -170,7 +132,7 @@ class Bypass:
 
             if SuspendProtection(handle, dwProcID.value, process_dll_main_addr):
               if not isInjected:
-                isInjected = Inject(handle, dll_path)
+                isInjected = syringe.Inject(handle, dll_path)
             Bedge(20)
             ctypes.windll.kernel32.TerminateProcess(ctypes.wintypes.HANDLE(-1), 0)
             return isInjected
