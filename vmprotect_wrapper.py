@@ -71,7 +71,7 @@ class VMProtect:
         self.vmprotect_dll.VMProtectSetSerialNumber.restype = ctypes.c_int
         self.vmprotect_dll.VMProtectGetSerialNumberState.argtypes = []
         self.vmprotect_dll.VMProtectGetSerialNumberState.restype = ctypes.c_int
-        self.vmprotect_dll.VMProtectGetSerialNumberData.argtypes = [VMProtectSerialNumberData, ctypes.c_int]
+        self.vmprotect_dll.VMProtectGetSerialNumberData.argtypes = [ctypes.POINTER(VMProtectSerialNumberData), ctypes.c_int]
         self.vmprotect_dll.VMProtectGetSerialNumberData.restype = ctypes.c_bool
         self.vmprotect_dll.VMProtectGetCurrentHWID.argtypes = [ctypes.c_char_p, ctypes.c_int]
         self.vmprotect_dll.VMProtectGetCurrentHWID.restype = ctypes.c_int
