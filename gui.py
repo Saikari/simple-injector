@@ -33,9 +33,9 @@ class injectorMW(QMainWindow):
             fname, _ = QFileDialog.getOpenFileName(self, f'Select .DLL to inject into process {process_name}')
             if fname:
                 try:
-                    self.injectors[class_name] = Injector()
+                    self.injectors[class_name] = Bypass()
                     self.injectors[class_name].load_from_name(process_name)
-                    self.injectors[class_name].inject_dll(fname)
+                    self.injectors[class_name].Attack(fname, process_name, class_name)
                 except Exception as e:
                     QMessageBox.critical(self, "Error", f'Failed to inject .DLL {self.injectors[class_name].path.split("/")[-1]} into {process_name}')
                 else:
