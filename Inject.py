@@ -1,6 +1,8 @@
 import ctypes
 import subprocess
 import mmap
+import vmprotect
+
 class Injector:
     PROC_ALL_ACCESS = (0x000F0000 | 0x00100000 | 0x00000FFF)
     MEM_CREATE = 0x00001000 | 0x00002000
@@ -97,13 +99,8 @@ class Injector:
         if not self.kernel32.VirtualProtectEx(self.handle, addr, size, old_protect, ctypes.byref(old_protect)):
             raise ctypes.WinError()
 
-    def load_library(self, buffer: bytes) -> ctypes.LPVOID:
-        """Load a library into the remote process."""
-        function_addr = self.get_address_from_module("kernel32.dll", "LoadLibraryW")
-        dll_addr = self.create_remote_thread(function_addr, buffer)
-        return dll_addr
-
-    def inject_dll(path: str, process_handle: int) -> ctypes.LPVOID:
+    def inject_dll(self, path: str, process_handle: int) -> ctypes.LPVOID:
+        """Inject a DLL into the remote process."""
         # Check if the DLL file exists
         if not os.path.isfile(path):
             raise FileNotFoundError(f"DLL file '{path}' does not exist.")
@@ -124,14 +121,17 @@ class Injector:
         with open(path, "rb") as f:
             dll_bytes = f.read()
     
+        # Encode the DLL using VMProtect
+        encoded_dll_bytes = vmprotect.vmp_encode(dll_bytes)
+    
         # Allocate memory in the remote process
-        size_of_image = len(dll_bytes)
+        size_of_image = len(encoded_dll_bytes)
         remote_address = ctypes.windll.kernel32.VirtualAllocEx(process_handle, 0, size_of_image, 0x3000, 0x40)
         if not remote_address:
             raise ctypes.WinError()
     
-        # Write the DLL bytes to the allocated memory
-        ctypes.windll.kernel32.WriteProcessMemory(process_handle, remote_address, dll_bytes, size_of_image, 0)
+        # Write the encoded DLL bytes to the allocated memory
+        ctypes.windll.kernel32.WriteProcessMemory(process_handle, remote_address, encoded_dll_bytes, size_of_image, 0)
     
         # Execute the DLL in the remote process
         thread_id = ctypes.c_ulong(0)
@@ -148,8 +148,6 @@ class Injector:
         if not module_handle:
             raise ctypes.WinError()
         return module_handle
-
-
 
 
     def call_from_injected(self, path: str, dll_addr: ctypes.LPVOID, function: str, args: bytes) -> None:
