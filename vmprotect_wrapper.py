@@ -30,16 +30,41 @@ class VMProtectDate:
         self.bMonth = bMonth
         self.bDay = bDay
 
-class VMProtectSerialNumberData:
-    def __init__(self):
-        self.nState = 0
-        self.wUserName = (VMP_WCHAR * 256)()
-        self.wEMail = (VMP_WCHAR * 256)()
-        self.dtExpire = VMProtectDate(0, 0, 0)
-        self.bRunningTime = 0
-        self.dtMaxBuild = VMProtectDate(0, 0, 0)
-        self.nUserDataLength = 0
-        self.bUserData = (c_char * 255)()
+class VMProtectSerialNumberData(ctypes.Structure):
+    _fields_ = [
+        ("nState", ctypes.c_int32),
+        ("wUserName", ctypes.c_wchar * 256),
+        ("wEMail", ctypes.c_wchar * 256),
+        ("dtExpire", VMProtectDate),
+        ("bRunningTime", ctypes.c_int32),
+        ("dtMaxBuild", VMProtectDate),
+        ("nUserDataLength", ctypes.c_uint8),
+        ("bUserData", ctypes.c_char * 255)
+    ]
+
+class VMProtectActivation:
+    def __init__(self, dll_path='VMProtectSDK64.dll'):
+        self.vmprotect_dll = ctypes.CDLL(dll_path)
+        self.vmprotect_dll.VMProtectSetSerialNumber.argtypes = [ctypes.c_char_p]
+        self.vmprotect_dll.VMProtectSetSerialNumber.restype = ctypes.c_int
+        self.vmprotect_dll.VMProtectGetSerialNumberState.argtypes = []
+        self.vmprotect_dll.VMProtectGetSerialNumberState.restype = ctypes.c_int
+        self.vmprotect_dll.VMProtectGetSerialNumberData.argtypes = [ctypes.POINTER(VMProtectSerialNumberData), ctypes.c_int]
+        self.vmprotect_dll.VMProtectGetSerialNumberData.restype = ctypes.c_bool
+        self.vmprotect_dll.VMProtectGetCurrentHWID.argtypes = [ctypes.c_char_p, ctypes.c_int]
+        self.vmprotect_dll.VMProtectGetCurrentHWID.restype = ctypes.c_int
+
+    def VMProtectGetCurrentHWID(self, HWID: str, size: int) -> int:
+        return self.vmprotect_dll.VMProtectGetCurrentHWID(HWID.encode(), size)
+
+    def VMProtectSetSerialNumber(self, serial_number: str) -> int:
+        return self.vmprotect_dll.VMProtectSetSerialNumber(serial_number.encode())
+
+    def VMProtectGetSerialNumberState(self) -> int:
+        return self.vmprotect_dll.VMProtectGetSerialNumberState()
+
+    def VMProtectGetSerialNumberData(self, data: VMProtectSerialNumberData, size: int) -> bool:
+        return self.vmprotect_dll.VMProtectGetSerialNumberData(ctypes.byref(data), size)
 
 
 
@@ -67,14 +92,6 @@ class VMProtect:
         self.vmprotect_dll.VMProtectDecryptStringW.restype = ctypes.c_wchar_p
         self.vmprotect_dll.VMProtectFreeString.argtypes = [ctypes.c_void_p]
         self.vmprotect_dll.VMProtectFreeString.restype = ctypes.c_bool
-        self.vmprotect_dll.VMProtectSetSerialNumber.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectSetSerialNumber.restype = ctypes.c_int
-        self.vmprotect_dll.VMProtectGetSerialNumberState.argtypes = []
-        self.vmprotect_dll.VMProtectGetSerialNumberState.restype = ctypes.c_int
-        self.vmprotect_dll.VMProtectGetSerialNumberData.argtypes = [ctypes.POINTER(VMProtectSerialNumberData), ctypes.c_int]
-        self.vmprotect_dll.VMProtectGetSerialNumberData.restype = ctypes.c_bool
-        self.vmprotect_dll.VMProtectGetCurrentHWID.argtypes = [ctypes.c_char_p, ctypes.c_int]
-        self.vmprotect_dll.VMProtectGetCurrentHWID.restype = ctypes.c_int
 
 
 
@@ -119,15 +136,3 @@ class VMProtect:
 
     def VMProtectFreeString(self, value: str) -> bool:
         return self.vmprotect_dll.VMProtectFreeString(ctypes.c_void_p(id(value)))
-
-    def VMProtectSetSerialNumber(self, serial_number: str) -> int:
-        return self.vmprotect_dll.VMProtectSetSerialNumber(serial_number.encode())
-
-    def VMProtectGetSerialNumberState(self) -> int:
-        return self.vmprotect_dll.VMProtectGetSerialNumberState()
-
-    def VMProtectGetSerialNumberData(self, data: VMProtectSerialNumberData, size: int) -> bool:
-        return self.vmprotect_dll.VMProtectGetSerialNumberData(data, size)
-
-    def VMProtectGetCurrentHWID(self, HWID: str, size: int) -> int:
-        return self.vmprotect_dll.VMProtectGetCurrentHWID(HWID.encode(), size)
