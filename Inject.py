@@ -1,6 +1,6 @@
 import ctypes
 import subprocess
-
+import mmap
 class Injector:
     PROC_ALL_ACCESS = (0x000F0000 | 0x00100000 | 0x00000FFF)
     MEM_CREATE = 0x00001000 | 0x00002000
@@ -103,10 +103,7 @@ class Injector:
         dll_addr = self.create_remote_thread(function_addr, buffer)
         return dll_addr
 
-    def inject_dll(self, path: str) -> ctypes.LPVOID:
-        """Inject a DLL into the remote process."""
-        self.path = path
-        
+    def inject_dll(path: str, process_handle: int) -> ctypes.LPVOID:
         # Check if the DLL file exists
         if not os.path.isfile(path):
             raise FileNotFoundError(f"DLL file '{path}' does not exist.")
@@ -119,12 +116,39 @@ class Injector:
             process_arch = "x86"
         
         # Check the DLL architecture
-        dll_arch = self.get_dll_architecture(path)
+        dll_arch = get_dll_architecture(path)
         if process_arch != dll_arch:
             raise ValueError(f"The process architecture ({process_arch}) does not match the DLL architecture ({dll_arch}).")
         
-        # Inject the DLL
-        return self.load_library(path.encode("utf-16le"))
+        # Read the DLL file into memory
+        with open(path, "rb") as f:
+            dll_bytes = f.read()
+    
+        # Allocate memory in the remote process
+        size_of_image = len(dll_bytes)
+        remote_address = ctypes.windll.kernel32.VirtualAllocEx(process_handle, 0, size_of_image, 0x3000, 0x40)
+        if not remote_address:
+            raise ctypes.WinError()
+    
+        # Write the DLL bytes to the allocated memory
+        ctypes.windll.kernel32.WriteProcessMemory(process_handle, remote_address, dll_bytes, size_of_image, 0)
+    
+        # Execute the DLL in the remote process
+        thread_id = ctypes.c_ulong(0)
+        ctypes.windll.kernel32.CreateRemoteThread(process_handle, None, 0, remote_address, None, 0, ctypes.byref(thread_id))
+    
+        # Wait for the remote thread to finish
+        ctypes.windll.kernel32.WaitForSingleObject(thread_id, -1)
+    
+        # Free the allocated memory
+        ctypes.windll.kernel32.VirtualFreeEx(process_handle, remote_address, 0, 0x8000)
+    
+        # Get the address of the loaded DLL
+        module_handle = ctypes.windll.kernel32.GetModuleHandleW(path.encode("utf-16le"))
+        if not module_handle:
+            raise ctypes.WinError()
+        return module_handle
+
 
 
 
