@@ -134,7 +134,7 @@ class Bypass:
               print(f"{process_name_joined}.dll not found!")
               return isInjected
 
-            if SuspendProtection(handle, dwProcID.value, process_dll_main_addr):
+            if Bypass.SuspendProtection(handle, dwProcID.value, process_dll_main_addr):
               if not isInjected:
                 isInjected = syringe.inject_dll(handle, dll_path, hwnd)
             Bedge(20)
