@@ -134,5 +134,5 @@ class Bypass:
               if not isInjected:
                 isInjected = syringe.Inject(handle, dll_path)
             Bedge(20)
-            ctypes.windll.kernel32.TerminateProcess(ctypes.wintypes.HANDLE(-1), 0)
-            return isInjected
+        ctypes.windll.kernel32.TerminateProcess(ctypes.wintypes.HANDLE(-1), 0)
+        return isInjected
