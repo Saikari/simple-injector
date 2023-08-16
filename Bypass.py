@@ -104,7 +104,7 @@ class Bypass:
     def Attack(dll_path, process_name, process_window_name):
         syringe = Injector()
         isInjected = False
-        while True:
+        while not isInjected:
             hwnd = None
             while hwnd is None:
                 hwnd = ctypes.windll.user32.FindWindowW(process_window_name.encode("utf-16le"), None)
