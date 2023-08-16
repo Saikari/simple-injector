@@ -4,7 +4,6 @@ import random
 import string
 import time
 import datetime
-import subprocess
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -91,12 +90,24 @@ def GeneratePFK(password, domain):
         file.write(pfx_data)
 
 def SignExecutable(password, pfx, filein, fileout):
-    cmd = ["osslsigncode", "sign", "-pkcs12", pfx, "-in", filein, "-out", fileout, "-pass", password]
-    subprocess.run(cmd, check=True)
+    # Use OpenSSL crypto module to sign the executable
+    with open(pfx, 'rb') as f:
+        pfx_data = f.read()
+    p12 = crypto.load_pkcs12(pfx_data, password)
+    signed_data = crypto.sign(p12.get_privatekey(), p12.get_certificate(), open(filein, 'rb').read(), 'sha256')
+    with open(fileout, 'wb') as f:
+        f.write(signed_data)
 
 def Check(check):
-    cmd = ["osslsigncode", "verify", check]
-    subprocess.run(cmd, check=True)
+    # Use OpenSSL crypto module to verify the signature
+    with open(check, 'rb') as f:
+        data = f.read()
+    try:
+        p12 = crypto.load_pkcs12(open(pfx, 'rb').read(), password)
+        crypto.verify(p12.get_certificate(), data, p12.get_privatekey(), 'sha256')
+        print("Signature verified successfully.")
+    except:
+        print("Signature verification failed.")
 
 def options():
     import argparse
