@@ -9,7 +9,11 @@ class Injector:
     MEM_CREATE = 0x00001000 | 0x00002000
     MEM_RELEASE = 0x8000
     PAGE_EXECUTE_READWRITE = 0x40
+    PROCESS_ALL_ACCESS = 0x1F0FFF
+    THREAD_ALL_ACCESS = 0x1F03FF
+    ThreadQuerySetWin32StartAddress = 9
 
+    
     def __init__(self):
         self.kernel32 = ctypes.windll.kernel32
         self.pid = ctypes.c_ulong()
