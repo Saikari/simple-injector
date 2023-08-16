@@ -116,10 +116,11 @@ class Bypass:
                     isInjected = False
                     Bypass.Bedge(1000)
 
-            dwProcID = wintypes.DWORD()
-            while not ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(dwProcID)) or dwProcID.value == 0:
+            dwThreadId = ctypes.windll.user32.GetWindowThreadProcessId(hwnd, None)
+            dwProcID = wintypes.DWORD(dwThreadId)
+            while not ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value):
                 Bypass.Bedge(1000)
-
+            
             handle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value)
 
             # Restore bytes of these hooked function
