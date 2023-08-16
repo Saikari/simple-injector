@@ -4,6 +4,7 @@ import random
 import string
 import time
 import datetime
+import subprocess
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -90,10 +91,12 @@ def GeneratePFK(password, domain):
         file.write(pfx_data)
 
 def SignExecutable(password, pfx, filein, fileout):
-    raise NotImplementedError("Signing executable with openssl module is not supported.")
+    cmd = ["osslsigncode", "sign", "-pkcs12", pfx, "-in", filein, "-out", fileout, "-pass", password]
+    subprocess.run(cmd, check=True)
 
 def Check(check):
-    raise NotImplementedError("Verifying code sign certificate with openssl module is not supported.")
+    cmd = ["osslsigncode", "verify", check]
+    subprocess.run(cmd, check=True)
 
 def options():
     import argparse
