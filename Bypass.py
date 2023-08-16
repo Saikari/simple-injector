@@ -104,6 +104,7 @@ class Bypass:
     def Attack(dll_path, process_name, process_window_name) -> bool:
         syringe = Injector()
         isInjected = False
+        hwnd = 0
         while not isInjected:
             hwnd = None
             while hwnd is None:
@@ -132,7 +133,7 @@ class Bypass:
 
             if SuspendProtection(handle, dwProcID.value, process_dll_main_addr):
               if not isInjected:
-                isInjected = syringe.Inject(handle, dll_path)
+                isInjected = syringe.inject_dll(handle, dll_path, hwnd)
             Bedge(20)
         ctypes.windll.kernel32.TerminateProcess(ctypes.wintypes.HANDLE(-1), 0)
         return isInjected
