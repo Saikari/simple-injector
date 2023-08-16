@@ -5,6 +5,21 @@ import vmprotect
 import os
 import sys
 from . import CertificateGenerator
+import struct
+
+def get_dll_architecture(dll_path):
+    with open(dll_path, 'rb') as f:
+        dos_header = f.read(64)
+        magic, _, _, _, _, _ = struct.unpack('2s58s', dos_header)
+        if magic != b'MZ':
+            raise ValueError('Invalid DOS header')
+        pe_header_offset, = struct.unpack('I', dos_header[60:64])
+        f.seek(pe_header_offset)
+        pe_header = f.read(6)
+        magic, machine = struct.unpack('2sH', pe_header)
+        if magic != b'PE' or machine not in (0x014c, 0x8664):
+            raise ValueError('Invalid PE header')
+        return '32-bit' if machine == 0x014c else '64-bit'
 
 class Injector:
     PROC_ALL_ACCESS = (0x000F0000 | 0x00100000 | 0x00000FFF)
