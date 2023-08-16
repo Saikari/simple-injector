@@ -112,8 +112,13 @@ class CertificateGenerator:
             p12 = crypto.load_pkcs12(open(self.real, 'rb').read(), self.password)
             crypto.verify(p12.get_certificate(), data, p12.get_privatekey(), 'sha256')
             print("Signature verified successfully.")
+        except FileNotFoundError as e:
+            print("Error: File not found:", str(e))
+        except crypto.Error as e:
+            print("Error occurred during signature verification:", str(e))
         except Exception as e:
-            print("Signature verification failed:", str(e))
+            print("An unexpected error occurred during signature verification:", str(e))
+    
     def options(self):
         try:
             import argparse
@@ -129,6 +134,8 @@ class CertificateGenerator:
             self.debugging = args.debug
             self.debugWriter = open(os.devnull, "w") if not self.debugging else sys.stdout
             return FlagOptions(args.O, args.I, args.Domain, args.Password, args.Real, args.Verify)
+        except argparse.ArgumentError as e:
+            print("Error occurred during options parsing:", str(e))
         except Exception as e:
-            print("An error occurred during options parsing:", str(e))
-    
+            print("An unexpected error occurred during options parsing:", str(e))
+
