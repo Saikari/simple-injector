@@ -1,7 +1,7 @@
 from Bypass import *
 from PyQt6.QtWidgets import QMainWindow, QListWidget, QListWidgetItem, QMessageBox, QFileDialog
 import psutil
-from re import findall
+import ctypes
 
 class injectorMW(QMainWindow):
     def __init__(self):
@@ -9,30 +9,40 @@ class injectorMW(QMainWindow):
         self.setWindowTitle("Process List")
         self.injectors = {}
         self.processLW = QListWidget(self)
-        self.processlist = [(p.name(), p.pid) for p in psutil.process_iter(['name', 'pid']) if p.status() == psutil.STATUS_RUNNING]
-        self.processNames = [f'{i[0]}\tPID:{i[1]}' for i in self.processlist]
+        self.processlist = [(p.name(), get_class_name(win32gui.FindWindow(None, p.name()))) for p in psutil.process_iter(['name', 'pid']) if p.status() == psutil.STATUS_RUNNING]
+        self.processNames = [f'{i[0]}' for i in self.processlist]
+        self.classNames = [f'{i[1]}' for i in self.processlist]
         QLWIs = [QListWidgetItem(i, self.processLW) for i in self.processNames]
+        for i, item in enumerate(QLWIs):
+            item.setData(Qt.UserRole, (self.processlist[i][0], self.processlist[i][1]))
         self.processLW.itemDoubleClicked.connect(self.clickd)
         self.processLW.setSortingEnabled(True)
         self.setCentralWidget(self.processLW)
 
     def clickd(self, item):
-        pid = findall(r"PID:(.{1,7})", item.text())[0]
-        if pid not in self.injectors:
-            fname, _ = QFileDialog.getOpenFileName(self, f'Select .DLL to inject into process {item.text()}')
+        process_name = item.data(Qt.UserRole)[0]
+        class_name = item.data(Qt.UserRole)[1]
+        if class_name not in self.injectors:
+            fname, _ = QFileDialog.getOpenFileName(self, f'Select .DLL to inject into process {process_name}')
             if fname:
                 try:
-                    self.injectors[pid] = Injector()
-                    self.injectors[pid].load_from_pid(int(pid))
-                    self.injectors[pid].inject_dll(fname)
+                    self.injectors[class_name] = Injector()
+                    self.injectors[class_name].load_from_name(process_name)
+                    self.injectors[class_name].inject_dll(fname)
                 except Exception as e:
-                    QMessageBox.critical(self, "Error", f'Failed to inject .DLL {self.injectors[pid].path.split("/")[-1]} into {item.text()}')
+                    QMessageBox.critical(self, "Error", f'Failed to inject .DLL {self.injectors[class_name].path.split("/")[-1]} into {process_name}')
                 else:
-                    QMessageBox.information(self, "Info", f'Successfully injected .DLL {self.injectors[pid].path.split("/")[-1]} into {item.text()}')
+                    QMessageBox.information(self, "Info", f'Successfully injected .DLL {self.injectors[class_name].path.split("/")[-1]} into {process_name}')
         else:
             try:
-                self.injectors[pid].unload()
+                self.injectors[class_name].unload()
             except Exception as e:
-                QMessageBox.critical(self, "Error", f'Failed to unload .DLL {self.injectors[pid].path.split("/")[-1]} from {item.text()}')
+                QMessageBox.critical(self, "Error", f'Failed to unload .DLL {self.injectors[class_name].path.split("/")[-1]} from {process_name}')
             else:
-                QMessageBox.information(self, "Info", f'Successfully unloaded .DLL {self.injectors[pid].path.split("/")[-1]} from {item.text()}')
+                QMessageBox.information(self, "Info", f'Successfully unloaded .DLL {self.injectors[class_name].path.split("/")[-1]} from {process_name}')
+
+def get_class_name(hwnd):
+    buf_size = 256
+    buf = ctypes.create_unicode_buffer(buf_size)
+    ctypes.windll.user32.GetClassNameW(hwnd, buf, buf_size)
+    return buf.value
