@@ -2,6 +2,8 @@ import ctypes
 import subprocess
 import mmap
 import vmprotect
+import os
+import sys
 from . import CertificateGenerator
 
 class Injector:
