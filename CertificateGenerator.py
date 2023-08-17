@@ -1,21 +1,15 @@
-from os import chdir, rmdir
-from ssl import SSLError, SSLContext, PROTOCOL_TLS_CLIENT
-import ssl
+from ssl import SSLError
 from random import randint, choice
 from string import ascii_letters, digits
 from OpenSSL import crypto
-
-import os
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
+from logging import basicConfig, Formatter, StreamHandler, getLogger, INFO, DEBUG, FileHandler
+from socket import create_connection, gaierror, timeout
 
-import requests
-import logging
-import socket
-
-logging.basicConfig(level=logging.DEBUG, filename='certificate_generator.log', filemode='w',
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+basicConfig(level=DEBUG, filename='certificate_generator.log', filemode='w',
+            format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class CertificateGenerator:
@@ -30,19 +24,19 @@ class CertificateGenerator:
         self.debugWriter = None
 
         # Create logger
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
+        self.logger = getLogger(__name__)
+        self.logger.setLevel(DEBUG)
 
         # Create console handler with a higher log level
-        consoleHandler = logging.StreamHandler()
-        consoleHandler.setLevel(logging.INFO)
+        consoleHandler = StreamHandler()
+        consoleHandler.setLevel(INFO)
 
         # Create file handler which logs even debug messages
-        fileHandler = logging.FileHandler('certificate_generator.log')
-        fileHandler.setLevel(logging.DEBUG)
+        fileHandler = FileHandler('certificate_generator.log')
+        fileHandler.setLevel(DEBUG)
 
         # Create formatter and add it to the handlers
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         consoleHandler.setFormatter(formatter)
         fileHandler.setFormatter(formatter)
 
@@ -134,12 +128,12 @@ class CertificateGenerator:
             context = ssl.create_default_context()  # SSLContext(PROTOCOL_TLS_CLIENT)
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
-            with socket.create_connection((address.split(':')[0], 443)) as sock:
+            with create_connection((address.split(':')[0], 443)) as sock:
                 with context.wrap_socket(sock, server_hostname=address.split(':')[0]) as ssock:
                     cert = ssock.getpeercert(True)
             return crypto.dump_certificate(crypto.FILETYPE_PEM,
                                            crypto.load_certificate(crypto.FILETYPE_ASN1, cert)), None
-        except (socket.gaierror, socket.timeout, SSLError, crypto.Error) as e:
+        except (gaierror, timeout, SSLError, crypto.Error) as e:
             raise Exception(f"Error getting certificates for {address}: {str(e)}")
 
     def GeneratePFK(self, password, domain) -> crypto.PKCS12:
@@ -192,4 +186,3 @@ class CertificateGenerator:
             print("Error occurred during signature verification:", str(e))
         except Exception as e:
             print("An unexpected error occurred during signature verification:", str(e))
-
