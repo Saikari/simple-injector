@@ -1,143 +1,143 @@
-import ctypes
+from ctypes import byref, windll, sizeof, Structure, c_void_p, c_ulong
 from ctypes import wintypes
-import os
-import sys
-import time
+from time import sleep
 from typing import Optional
-from . import Injector
+from Injector import Injector
 
 PROCESS_ALL_ACCESS = 0x1F0FFF
 
+
 class Bypass:
     @staticmethod
-    def SuspendProtection(hProcess: ctypes.wintypes.HANDLE, pid: int, protAddr: int) -> bool:
-        te32 = ctypes.Structure()
-        te32.dwSize = ctypes.sizeof(te32)
-        hThreadSnap = ctypes.windll.kernel32.CreateToolhelp32Snapshot(0x00000002, 0)
+    def SuspendProtection(hProcess: wintypes.HANDLE, pid: int, protAddr: int) -> bool:
+        te32 = Structure()
+        te32.dwSize = sizeof(te32)
+        hThreadSnap = windll.kernel32.CreateToolhelp32Snapshot(0x00000002, 0)
         if hThreadSnap == -1:
             return False
 
-        if not ctypes.windll.kernel32.Thread32First(hThreadSnap, ctypes.byref(te32)):
-            ctypes.windll.kernel32.CloseHandle(hThreadSnap)
+        if not windll.kernel32.Thread32First(hThreadSnap, byref(te32)):
+            windll.kernel32.CloseHandle(hThreadSnap)
             return False
 
         while True:
             if te32.th32OwnerProcessID == pid:
-                threadInfo = ctypes.c_void_p()
-                retLen = ctypes.c_ulong()
-                NtQueryInformationThread = ctypes.windll.ntdll.NtQueryInformationThread
-                hThread = ctypes.windll.kernel32.OpenThread(0x1F03FF, 0, te32.th32ThreadID)
+                threadInfo = c_void_p()
+                retLen = c_ulong()
+                NtQueryInformationThread = windll.ntdll.NtQueryInformationThread
+                hThread = windll.kernel32.OpenThread(0x1F03FF, 0, te32.th32ThreadID)
                 if not hThread:
-                    ctypes.windll.kernel32.CloseHandle(hThreadSnap)
+                    windll.kernel32.CloseHandle(hThreadSnap)
                     return False
 
-                ntqiRet = NtQueryInformationThread(hThread, 9, ctypes.byref(threadInfo), ctypes.sizeof(threadInfo), ctypes.byref(retLen))
+                ntqiRet = NtQueryInformationThread(hThread, 9, byref(threadInfo), sizeof(threadInfo), byref(retLen))
                 if ntqiRet != 0:
-                    ctypes.windll.kernel32.CloseHandle(hThreadSnap)
-                    ctypes.windll.kernel32.CloseHandle(hThread)
+                    windll.kernel32.CloseHandle(hThreadSnap)
+                    windll.kernel32.CloseHandle(hThread)
                     return False
 
-                mbi = ctypes.Structure()
-                if ctypes.windll.kernel32.VirtualQueryEx(hProcess, threadInfo, ctypes.byref(mbi), ctypes.sizeof(mbi)):
+                mbi = Structure()
+                if windll.kernel32.VirtualQueryEx(hProcess, threadInfo, byref(mbi), sizeof(mbi)):
                     baseAddress = mbi.AllocationBase
                     if baseAddress == protAddr:
-                        ctypes.windll.kernel32.SuspendThread(hThread)
-                        ctypes.windll.kernel32.CloseHandle(hThreadSnap)
-                        ctypes.windll.kernel32.CloseHandle(hThread)
+                        windll.kernel32.SuspendThread(hThread)
+                        windll.kernel32.CloseHandle(hThreadSnap)
+                        windll.kernel32.CloseHandle(hThread)
                         return True
 
-                ctypes.windll.kernel32.CloseHandle(hThread)
+                windll.kernel32.CloseHandle(hThread)
 
-            if not ctypes.windll.kernel32.Thread32Next(hThreadSnap, ctypes.byref(te32)):
+            if not windll.kernel32.Thread32Next(hThreadSnap, byref(te32)):
                 break
 
-        ctypes.windll.kernel32.CloseHandle(hThreadSnap)
+        windll.kernel32.CloseHandle(hThreadSnap)
         return False
 
     @staticmethod
-    def Patch(address: int, data: bytes, size: int, handle: ctypes.wintypes.HANDLE) -> bool:
-        oldProtect = ctypes.c_ulong()
-        if not ctypes.windll.kernel32.VirtualProtectEx(handle, address, size, 0x40, ctypes.byref(oldProtect)):
+    def Patch(address: int, data: bytes, size: int, handle: wintypes.HANDLE) -> bool:
+        oldProtect = c_ulong()
+        if not windll.kernel32.VirtualProtectEx(handle, address, size, 0x40, byref(oldProtect)):
             return False
 
-        if not ctypes.windll.kernel32.WriteProcessMemory(handle, address, data, size, None):
+        if not windll.kernel32.WriteProcessMemory(handle, address, data, size, None):
             return False
 
-        if not ctypes.windll.kernel32.VirtualProtectEx(handle, address, size, oldProtect, ctypes.byref(oldProtect)):
+        if not windll.kernel32.VirtualProtectEx(handle, address, size, oldProtect, byref(oldProtect)):
             return False
 
         return True
 
     @staticmethod
     def GetLibraryProcAddress(library: str, function: str) -> Optional[int]:
-        hModule = ctypes.windll.kernel32.GetModuleHandleA(library.encode())
+        hModule = windll.kernel32.GetModuleHandleA(library.encode())
         if not hModule:
             return None
 
-        return ctypes.windll.kernel32.GetProcAddress(hModule, function.encode())
+        return windll.kernel32.GetProcAddress(hModule, function.encode())
 
     @staticmethod
     def GetModuleAddress(module: str, pid: int) -> Optional[int]:
-        hSnapshot = ctypes.windll.kernel32.CreateToolhelp32Snapshot(0x00000008, pid)
+        hSnapshot = windll.kernel32.CreateToolhelp32Snapshot(0x00000008, pid)
         if hSnapshot == -1:
             return None
 
-        me32 = ctypes.Structure()
-        me32.dwSize = ctypes.sizeof(me32)
-        if not ctypes.windll.kernel32.Module32First(hSnapshot, ctypes.byref(me32)):
-            ctypes.windll.kernel32.CloseHandle(hSnapshot)
+        me32 = Structure()
+        me32.dwSize = sizeof(me32)
+        if not windll.kernel32.Module32First(hSnapshot, byref(me32)):
+            windll.kernel32.CloseHandle(hSnapshot)
             return None
 
         while True:
             if me32.szModule.decode().lower() == module.lower():
-                ctypes.windll.kernel32.CloseHandle(hSnapshot)
+                windll.kernel32.CloseHandle(hSnapshot)
                 return me32.modBaseAddr
 
-            if not ctypes.windll.kernel32.Module32Next(hSnapshot, ctypes.byref(me32)):
+            if not windll.kernel32.Module32Next(hSnapshot, byref(me32)):
                 break
 
-        ctypes.windll.kernel32.CloseHandle(hSnapshot)
+        windll.kernel32.CloseHandle(hSnapshot)
         return None
 
     @staticmethod
     def Bedge(ms: int) -> None:
-        time.sleep(ms / 1000.0)
+        sleep(ms / 1000.0)
 
     @staticmethod
     def Attack(dll_path, process_name, process_window_name) -> bool:
         syringe = Injector()
         isInjected = False
-        hwnd = 0
+        hwnd = None
         while not isInjected:
-            hwnd = None
             while hwnd is None:
-                hwnd = ctypes.windll.user32.FindWindowW(process_window_name.encode("utf-16le"), None)
+                hwnd = windll.user32.FindWindowW(process_window_name.encode("utf-16le"), None)
                 if hwnd == 0:
                     isInjected = False
                     Bypass.Bedge(1000)
 
-            dwThreadId = ctypes.windll.user32.GetWindowThreadProcessId(hwnd, None)
+            dwThreadId = windll.user32.GetWindowThreadProcessId(hwnd, None)
             dwProcID = wintypes.DWORD(dwThreadId)
-            while not ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value):
+            while not windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value):
                 Bypass.Bedge(1000)
-            
-            handle = ctypes.windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value)
+
+            handle = windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value)
 
             # Restore bytes of these hooked function
-            Bypass.Patch(Bypass.GetLibraryProcAddress(b"ntdll.dll", b"LdrInitializeThunk"), b"\x40\x53\x48\x83\xEC\x20", 6, handle)
-            Bypass.Patch(Bypass.GetLibraryProcAddress(b"ntdll.dll", b"NtQueryAttributesFile"), b"\x4C\x8B\xD1\xB8\x3D\x00\x00\x00", 8, handle)
+            Bypass.Patch(Bypass.GetLibraryProcAddress("ntdll.dll", "LdrInitializeThunk"),
+                         b"\x40\x53\x48\x83\xEC\x20", 6, handle)
+            Bypass.Patch(Bypass.GetLibraryProcAddress("ntdll.dll", "NtQueryAttributesFile"),
+                         b"\x4C\x8B\xD1\xB8\x3D\x00\x00\x00", 8, handle)
 
             split_result = process_name.split(".")
             process_name_joined = ".".join(split_result[:-1])
-          
+
             process_dll_main_addr = Bypass.GetModuleAddress(f"{process_name_joined}.dll", dwProcID.value)
             if process_dll_main_addr == 0:
-              print(f"{process_name_joined}.dll not found!")
-              return isInjected
+                print(f"{process_name_joined}.dll not found!")
+                return isInjected
 
             if Bypass.SuspendProtection(handle, dwProcID.value, process_dll_main_addr):
-              if not isInjected:
-                isInjected = syringe.inject_dll(handle, dll_path, hwnd)
+                if not isInjected:
+                    isInjected = syringe.inject_dll(handle, dll_path, hwnd)
             Bypass.Bedge(20)
-        ctypes.windll.kernel32.TerminateProcess(ctypes.wintypes.HANDLE(-1), 0)
+        windll.kernel32.TerminateProcess(wintypes.HANDLE(-1), 0)
         return isInjected

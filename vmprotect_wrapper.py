@@ -1,4 +1,5 @@
-import ctypes
+from ctypes import byref, c_wchar_p, c_uint8, c_char, c_int, c_void_p, c_wchar, c_int32, POINTER, c_char_p, Structure, \
+    CDLL, c_bool
 
 
 class VMProtectSerialStateFlags:
@@ -10,6 +11,7 @@ class VMProtectSerialStateFlags:
     SERIAL_STATE_FLAG_RUNNING_TIME_OVER = 0x10
     SERIAL_STATE_FLAG_BAD_HWID = 0x20
     SERIAL_STATE_FLAG_MAX_BUILD_EXPIRED = 0x40
+
 
 class VMProtectActivationFlags:
     ACTIVATION_OK = 0
@@ -24,35 +26,38 @@ class VMProtectActivationFlags:
     ACTIVATION_EXPIRED = 9
     ACTIVATION_NOT_AVAILABLE = 10
 
+
 class VMProtectDate:
     def __init__(self, wYear, bMonth, bDay):
         self.wYear = wYear
         self.bMonth = bMonth
         self.bDay = bDay
 
-class VMProtectSerialNumberData(ctypes.Structure):
+
+class VMProtectSerialNumberData(Structure):
     _fields_ = [
-        ("nState", ctypes.c_int32),
-        ("wUserName", ctypes.c_wchar * 256),
-        ("wEMail", ctypes.c_wchar * 256),
+        ("nState", c_int32),
+        ("wUserName", c_wchar * 256),
+        ("wEMail", c_wchar * 256),
         ("dtExpire", VMProtectDate),
-        ("bRunningTime", ctypes.c_int32),
+        ("bRunningTime", c_int32),
         ("dtMaxBuild", VMProtectDate),
-        ("nUserDataLength", ctypes.c_uint8),
-        ("bUserData", ctypes.c_char * 255)
+        ("nUserDataLength", c_uint8),
+        ("bUserData", c_char * 255)
     ]
+
 
 class VMProtectActivation:
     def __init__(self, dll_path='VMProtectSDK64.dll'):
-        self.vmprotect_dll = ctypes.CDLL(dll_path)
-        self.vmprotect_dll.VMProtectSetSerialNumber.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectSetSerialNumber.restype = ctypes.c_int
+        self.vmprotect_dll = CDLL(dll_path)
+        self.vmprotect_dll.VMProtectSetSerialNumber.argtypes = [c_char_p]
+        self.vmprotect_dll.VMProtectSetSerialNumber.restype = c_int
         self.vmprotect_dll.VMProtectGetSerialNumberState.argtypes = []
-        self.vmprotect_dll.VMProtectGetSerialNumberState.restype = ctypes.c_int
-        self.vmprotect_dll.VMProtectGetSerialNumberData.argtypes = [ctypes.POINTER(VMProtectSerialNumberData), ctypes.c_int]
-        self.vmprotect_dll.VMProtectGetSerialNumberData.restype = ctypes.c_bool
-        self.vmprotect_dll.VMProtectGetCurrentHWID.argtypes = [ctypes.c_char_p, ctypes.c_int]
-        self.vmprotect_dll.VMProtectGetCurrentHWID.restype = ctypes.c_int
+        self.vmprotect_dll.VMProtectGetSerialNumberState.restype = c_int
+        self.vmprotect_dll.VMProtectGetSerialNumberData.argtypes = [POINTER(VMProtectSerialNumberData), c_int]
+        self.vmprotect_dll.VMProtectGetSerialNumberData.restype = c_bool
+        self.vmprotect_dll.VMProtectGetCurrentHWID.argtypes = [c_char_p, c_int]
+        self.vmprotect_dll.VMProtectGetCurrentHWID.restype = c_int
 
     def VMProtectGetCurrentHWID(self, HWID: str, size: int) -> int:
         return self.vmprotect_dll.VMProtectGetCurrentHWID(HWID.encode(), size)
@@ -64,36 +69,33 @@ class VMProtectActivation:
         return self.vmprotect_dll.VMProtectGetSerialNumberState()
 
     def VMProtectGetSerialNumberData(self, data: VMProtectSerialNumberData, size: int) -> bool:
-        return self.vmprotect_dll.VMProtectGetSerialNumberData(ctypes.byref(data), size)
-
+        return self.vmprotect_dll.VMProtectGetSerialNumberData(byref(data), size)
 
 
 class VMProtect:
-    def __init__(self, dll_path = 'VMProtectSDK64.dll'):
-        self.vmprotect_dll = ctypes.CDLL(dll_path)
-        self.vmprotect_dll.VMProtectBegin.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectBeginVirtualization.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectBeginMutation.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectBeginUltra.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectBeginVirtualizationLockByKey.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectBeginUltraLockByKey.argtypes = [ctypes.c_char_p]
+    def __init__(self, dll_path='VMProtectSDK64.dll'):
+        self.vmprotect_dll = CDLL(dll_path)
+        self.vmprotect_dll.VMProtectBegin.argtypes = [c_char_p]
+        self.vmprotect_dll.VMProtectBeginVirtualization.argtypes = [c_char_p]
+        self.vmprotect_dll.VMProtectBeginMutation.argtypes = [c_char_p]
+        self.vmprotect_dll.VMProtectBeginUltra.argtypes = [c_char_p]
+        self.vmprotect_dll.VMProtectBeginVirtualizationLockByKey.argtypes = [c_char_p]
+        self.vmprotect_dll.VMProtectBeginUltraLockByKey.argtypes = [c_char_p]
         self.vmprotect_dll.VMProtectEnd.argtypes = []
         self.vmprotect_dll.VMProtectIsProtected.argtypes = []
-        self.vmprotect_dll.VMProtectIsProtected.restype = ctypes.c_bool
-        self.vmprotect_dll.VMProtectIsDebuggerPresent.argtypes = [ctypes.c_bool]
-        self.vmprotect_dll.VMProtectIsDebuggerPresent.restype = ctypes.c_bool
+        self.vmprotect_dll.VMProtectIsProtected.restype = c_bool
+        self.vmprotect_dll.VMProtectIsDebuggerPresent.argtypes = [c_bool]
+        self.vmprotect_dll.VMProtectIsDebuggerPresent.restype = c_bool
         self.vmprotect_dll.VMProtectIsVirtualMachinePresent.argtypes = []
-        self.vmprotect_dll.VMProtectIsVirtualMachinePresent.restype = ctypes.c_bool
+        self.vmprotect_dll.VMProtectIsVirtualMachinePresent.restype = c_bool
         self.vmprotect_dll.VMProtectIsValidImageCRC.argtypes = []
-        self.vmprotect_dll.VMProtectIsValidImageCRC.restype = ctypes.c_bool
-        self.vmprotect_dll.VMProtectDecryptStringA.argtypes = [ctypes.c_char_p]
-        self.vmprotect_dll.VMProtectDecryptStringA.restype = ctypes.c_char_p
-        self.vmprotect_dll.VMProtectDecryptStringW.argtypes = [ctypes.c_wchar_p]
-        self.vmprotect_dll.VMProtectDecryptStringW.restype = ctypes.c_wchar_p
-        self.vmprotect_dll.VMProtectFreeString.argtypes = [ctypes.c_void_p]
-        self.vmprotect_dll.VMProtectFreeString.restype = ctypes.c_bool
-
-
+        self.vmprotect_dll.VMProtectIsValidImageCRC.restype = c_bool
+        self.vmprotect_dll.VMProtectDecryptStringA.argtypes = [c_char_p]
+        self.vmprotect_dll.VMProtectDecryptStringA.restype = c_char_p
+        self.vmprotect_dll.VMProtectDecryptStringW.argtypes = [c_wchar_p]
+        self.vmprotect_dll.VMProtectDecryptStringW.restype = c_wchar_p
+        self.vmprotect_dll.VMProtectFreeString.argtypes = [c_void_p]
+        self.vmprotect_dll.VMProtectFreeString.restype = c_bool
 
     def VMProtectBegin(self, marker_name: str) -> None:
         self.vmprotect_dll.VMProtectBegin(marker_name.encode())
@@ -135,4 +137,4 @@ class VMProtect:
         return self.vmprotect_dll.VMProtectDecryptStringW(value.encode()).decode()
 
     def VMProtectFreeString(self, value: str) -> bool:
-        return self.vmprotect_dll.VMProtectFreeString(ctypes.c_void_p(id(value)))
+        return self.vmprotect_dll.VMProtectFreeString(c_void_p(id(value)))
