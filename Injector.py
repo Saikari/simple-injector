@@ -1,4 +1,4 @@
-from ctypes import byref, windll, c_long, WinError, c_int, c_ulong, create_string_buffer
+from ctypes import byref, windll, c_long, WinError, c_int, c_ulong, create_string_buffer, c_void_p
 from ctypes.wintypes import LPVOID
 from struct import unpack
 from subprocess import Popen
