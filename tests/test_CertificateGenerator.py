@@ -20,20 +20,20 @@ def test_generate_pfk(cert_gen):
 
 
 def test_sign_executable(cert_gen):
-    with open("testfile.txt", "w") as f:
-        f.write("test")
+    with open("testfile.bin", "wb") as f:
+        f.write(b"test")
     cert_gen.SignExecutable("password", "dzen.ru.pfx", "testfile.txt", "signed_testfile.txt")
     assert path.exists("signed_testfile.txt")
 
+
 def test_check_signature_verification(cert_gen):
     # Create a temporary file and sign it
-    filein = "testfile.txt"
-    fileout = "signed_testfile.txt"
-    with open(filein, "w") as f:
-        f.write("test data")
+    filein = "testfile.bin"
+    fileout = "signed_testfile.bin"
+    with open(filein, "wb") as f:
+        f.write(b"test data")
     cert_gen.SignExecutable("password", "dzen.ru.pfx", filein, fileout)
     # Verify the signature
     cert_gen.real = "dzen.ru.pfx"
     cert_gen.password = "password"
     assert cert_gen.Check(fileout) is True
-
