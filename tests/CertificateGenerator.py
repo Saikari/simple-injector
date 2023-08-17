@@ -2,7 +2,7 @@ from ssl import SSLError, create_default_context, CERT_NONE
 from random import randint, choice
 from string import ascii_letters, digits
 from OpenSSL import crypto
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
 from logging import basicConfig, Formatter, StreamHandler, getLogger, INFO, DEBUG, FileHandler
