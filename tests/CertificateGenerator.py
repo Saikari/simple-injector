@@ -175,10 +175,14 @@ class CertificateGenerator:
         try:
             with open(check, 'rb') as f:
                 data = f.read()
-            p12 = crypto.load_pkcs12(open(self.real, 'rb').read(), self.password)
+            p12 = crypto.load_pkcs12(open(self.real, 'rb').read(), self.password.encode())
             private_key = p12.get_privatekey().to_cryptography_key()
-            private_key_str = private_key.export_key()
-            crypto.verify(p12.get_certificate(), data, private_key_str, 'sha256')
+            private_key_bytes = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+            crypto.verify(p12.get_certificate(), data, private_key_bytes, 'sha256')
             print("Signature verified successfully.")
             return True
         except FileNotFoundError as e:
