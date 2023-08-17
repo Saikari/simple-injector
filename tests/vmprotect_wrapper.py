@@ -39,9 +39,9 @@ class VMProtectSerialNumberData(Structure):
         ("nState", c_int32),
         ("wUserName", c_wchar * 256),
         ("wEMail", c_wchar * 256),
-        ("dtExpire", VMProtectDate),
+        ("dtExpire", Pointer(VMProtectDate)),
         ("bRunningTime", c_int32),
-        ("dtMaxBuild", VMProtectDate),
+        ("dtMaxBuild", Pointer(VMProtectDate)),
         ("nUserDataLength", c_uint8),
         ("bUserData", c_char * 255)
     ]
