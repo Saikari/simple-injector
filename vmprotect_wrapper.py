@@ -48,7 +48,19 @@ class VMProtectSerialNumberData(Structure):
 
 
 class VMProtectActivation:
-    def __init__(self, dll_path='VMProtectSDK64.dll'):
+    def __init__(self, dll_path):
+        os_name = platform.system()
+        arch = platform.architecture()[0]
+        
+        if os_name == 'Windows':
+            if arch == '32bit':
+                dll_path = 'Windows/VMProtectSDK32.dll'
+            elif arch == '64bit':
+                dll_path = 'Windows/VMProtectSDK64.dll'
+            else:
+                raise Exception("Unsupported architecture: " + arch)
+        else:
+            raise Exception("Unsupported operating system: " + os_name)
         self.vmprotect_dll = CDLL(dll_path)
         self.vmprotect_dll.VMProtectSetSerialNumber.argtypes = [c_char_p]
         self.vmprotect_dll.VMProtectSetSerialNumber.restype = c_int
