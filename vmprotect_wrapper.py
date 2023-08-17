@@ -1,6 +1,6 @@
 from ctypes import byref, c_wchar_p, c_uint8, c_char, c_int, c_void_p, c_wchar, c_int32, POINTER, c_char_p, Structure, \
     CDLL, c_bool
-
+import platform
 
 class VMProtectSerialStateFlags:
     SERIAL_STATE_SUCCESS = 0x0
@@ -59,6 +59,8 @@ class VMProtectActivation:
                 dll_path = 'Windows/VMProtectSDK64.dll'
             else:
                 raise Exception("Unsupported architecture: " + arch)
+        elif os_name == 'Darwin':
+            lib = CDLL('/path/to/library.dylib')
         else:
             raise Exception("Unsupported operating system: " + os_name)
         self.vmprotect_dll = CDLL(dll_path)
