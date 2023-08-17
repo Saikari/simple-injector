@@ -193,8 +193,3 @@ class CertificateGenerator:
         except Exception as e:
             print("An unexpected error occurred during signature verification:", str(e))
 
-
-cert_gen = CertificateGenerator("outFile", "inputFile", "dzen.ru", "password", "real", "verify")
-cert_gen.GenerateCert("dzen.ru")
-cert_gen.GeneratePFK("password", "dzen.ru")
-cert_gen.SignExecutable("password", "dzen.ru.pfx", "inputFile", "outputFile")
