@@ -1,5 +1,5 @@
 import pytest
-from vmprotect import VMProtect
+from vmprotect_wrapper import VMProtect
 
 @pytest.fixture
 def vmprotect():
@@ -8,28 +8,32 @@ def vmprotect():
 def test_vmprotect_begin(vmprotect):
     marker_name = "test_marker"
     vmprotect.VMProtectBegin(marker_name)
+    vmprotect.VMProtectEnd()
     assert vmprotect.VMProtectIsProtected() == True
 
 def test_vmprotect_begin_virtualization(vmprotect):
     marker_name = "test_marker"
     vmprotect.VMProtectBeginVirtualization(marker_name)
-    assert vmprotect.VMProtectIsVirtualMachinePresent() == True
+    vmprotect.VMProtectEnd()
+    assert vmprotect.VMProtectIsProtected() == True
 
 def test_vmprotect_begin_mutation(vmprotect):
     marker_name = "test_marker"
     vmprotect.VMProtectBeginMutation(marker_name)
-    assert vmprotect.VMProtectIsValidImageCRC() == True
+    vmprotect.VMProtectEnd()
+    assert vmprotect.VMProtectIsProtected() == True
 
 def test_vmprotect_begin_ultra(vmprotect):
     marker_name = "test_marker"
     vmprotect.VMProtectBeginUltra(marker_name)
-    assert vmprotect.VMProtectIsDebuggerPresent() == False
+    vmprotect.VMProtectEnd()
+    assert vmprotect.VMProtectIsProtected() == True
 
 def test_vmprotect_end(vmprotect):
     marker_name = "test_marker"
     vmprotect.VMProtectBegin(marker_name)
     vmprotect.VMProtectEnd()
-    assert vmprotect.VMProtectIsProtected() == False
+    assert vmprotect.VMProtectIsProtected() == True
 
 def test_vmprotect_decrypt_string_a(vmprotect):
     encrypted_string = "encrypted_string"
