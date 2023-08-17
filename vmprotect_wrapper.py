@@ -48,7 +48,7 @@ class VMProtectSerialNumberData(Structure):
 
 
 class VMProtectActivation:
-    def __init__(self, dll_path):
+    def __init__(self):
         os_name = platform.system()
         arch = platform.architecture()[0]
         
