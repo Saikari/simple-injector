@@ -29,9 +29,9 @@ class VMProtectActivationFlags:
 
 class VMProtectDate(Structure):
     _fields_ = [
-        ("wYear", c_int32)
-        ("bMonth", c_int32)
-        ("bDay", c_int32)
+        ("wYear", c_uint16),
+        ("bMonth", c_uint8),
+        ("bDay", c_uint8)
     ]
 
 class VMProtectSerialNumberData(Structure):
