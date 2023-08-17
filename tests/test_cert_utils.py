@@ -2,7 +2,7 @@ import os
 import pytest
 import sys
 sys.path.append('..')
-from certificate_generator import CertificateGenerator
+from . import CertificateGenerator
 
 @pytest.fixture
 def cert_gen():
