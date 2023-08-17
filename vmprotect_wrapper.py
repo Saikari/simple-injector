@@ -94,7 +94,25 @@ class VMProtectActivation:
 
 
 class VMProtect:
-    def __init__(self, dll_path='VMProtectSDK64.dll'):
+    def __init__(self):
+        if os_name == 'Windows':
+            if arch == '32bit':
+                dll_path = 'Windows/VMProtectSDK32.dll'
+            elif arch == '64bit':
+                dll_path = 'Windows/VMProtectSDK64.dll'
+            else:
+                raise Exception("Unsupported architecture: " + arch)
+        elif os_name == 'Darwin':
+            dll_path = 'OSX/libVMProtectSDK.dylib'
+        elif os_name == 'Linux':
+            if arch == '32bit':
+                dll_path = 'Linux/libVMProtectSDK32.so'
+            elif arch == '64bit':
+                dll_path = 'Linux/libVMProtectSDK64.so'
+            else:
+                raise Exception("Unsupported architecture: " + arch)
+        else:
+            raise Exception("Unsupported operating system: " + os_name)
         self.vmprotect_dll = CDLL(dll_path)
         self.vmprotect_dll.VMProtectBegin.argtypes = [c_char_p]
         self.vmprotect_dll.VMProtectBeginVirtualization.argtypes = [c_char_p]
