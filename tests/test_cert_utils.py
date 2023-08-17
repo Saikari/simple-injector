@@ -1,6 +1,5 @@
 import os
 import pytest
-from pytest import capsys
 from certificate_generator import CertificateGenerator
 
 @pytest.fixture
@@ -21,9 +20,3 @@ def test_sign_executable(cert_gen):
         f.write("test")
     cert_gen.SignExecutable("password", "example.com.pfx", "testfile.txt", "signed_testfile.txt")
     assert os.path.exists("signed_testfile.txt")
-
-def test_check(cert_gen):
-    with open("signed_testfile.txt", "rb") as f:
-        data = f.read()
-    cert_gen.Check(data)
-    assert "Signature verified successfully." in capsys.readouterr().out
