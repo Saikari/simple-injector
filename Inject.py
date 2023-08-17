@@ -155,13 +155,13 @@ class Injector:
         #encoded_dll_bytes = vmprotect.vmp_encode(dll_bytes)
     
         # Allocate memory in the remote process
-        size_of_image = len(encoded_dll_bytes)
+        size_of_image = len(dll_bytes)
         remote_address = ctypes.windll.kernel32.VirtualAllocEx(process_handle, 0, size_of_image, 0x3000, 0x40)
         if not remote_address:
             raise ctypes.WinError()
     
         # Write the encoded DLL bytes to the allocated memory
-        ctypes.windll.kernel32.WriteProcessMemory(process_handle, remote_address, encoded_dll_bytes, size_of_image, 0)
+        ctypes.windll.kernel32.WriteProcessMemory(process_handle, remote_address, dll_bytes, size_of_image, 0)
     
         # Execute the DLL in the remote process
         thread_id = ctypes.c_ulong(0)
