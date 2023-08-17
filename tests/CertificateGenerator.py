@@ -175,7 +175,7 @@ class CertificateGenerator:
         try:
             with open(check, 'rb') as f:
                 data = f.read()
-            p12 = crypto.load_pkcs12(open(self.real, 'rb').read(), self.password.encode())
+            p12 = load_pkcs12(open(self.real, 'rb').read(), self.password.encode())
             private_key = p12.get_privatekey().to_cryptography_key()
             private_key_bytes = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
