@@ -95,6 +95,8 @@ class VMProtectActivation:
 
 class VMProtect:
     def __init__(self):
+        os_name = platform.system()
+        arch = platform.architecture()[0]
         if os_name == 'Windows':
             if arch == '32bit':
                 dll_path = 'Windows/VMProtectSDK32.dll'
