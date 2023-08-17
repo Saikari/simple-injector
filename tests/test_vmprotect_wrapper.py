@@ -32,5 +32,5 @@ def test_vmprotect_end(vmprotect):
 
 def test_vmprotect_decrypt_string_a(vmprotect):
     string = "encrypted_string"
-    encrypted_string = vmprotect.VMProtectDecryptStringA(encrypted_string)
+    encrypted_string = vmprotect.VMProtectDecryptStringA(string)
     assert encrypted_string != string
