@@ -171,7 +171,7 @@ class CertificateGenerator:
         except Exception as e:
             print("An error occurred during SignExecutable:", str(e))
 
-    def Check(self, check):
+    def Check(self, check) -> bool:
         try:
             with open(check, 'rb') as f:
                 data = f.read()
@@ -180,9 +180,13 @@ class CertificateGenerator:
             private_key_str = private_key.export_key()
             crypto.verify(p12.get_certificate(), data, private_key_str, 'sha256')
             print("Signature verified successfully.")
+            return True
         except FileNotFoundError as e:
             print("Error: File not found:", str(e))
+            return False
         except crypto.Error as e:
             print("Error occurred during signature verification:", str(e))
+            return False
         except Exception as e:
             print("An unexpected error occurred during signature verification:", str(e))
+            return False
