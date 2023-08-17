@@ -31,7 +31,7 @@ def test_check_signature_verification(cert_gen):
     fileout = "signed_testfile.txt"
     with open(filein, "w") as f:
         f.write("test data")
-    cert_gen.SignExecutable("password", "domain.pfx", filein, fileout)
+    cert_gen.SignExecutable("password", "dzen.ru.pfx", filein, fileout)
     # Verify the signature
     cert_gen.real = "dzen.ru.pfx"
     cert_gen.password = "password"
