@@ -1,5 +1,7 @@
 import os
 import pytest
+import sys
+sys.path.append('..')
 from certificate_generator import CertificateGenerator
 
 @pytest.fixture
