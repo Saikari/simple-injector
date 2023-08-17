@@ -1,4 +1,4 @@
-from ssl import SSLError
+from ssl import SSLError, create_default_context, CERT_NONE
 from random import randint, choice
 from string import ascii_letters, digits
 from OpenSSL import crypto
@@ -125,9 +125,9 @@ class CertificateGenerator:
     @staticmethod
     def GetCertificatesPEM(address):
         try:
-            context = ssl.create_default_context()  # SSLContext(PROTOCOL_TLS_CLIENT)
+            context = create_default_context()  # SSLContext(PROTOCOL_TLS_CLIENT)
             context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE
+            context.verify_mode = CERT_NONE
             with create_connection((address.split(':')[0], 443)) as sock:
                 with context.wrap_socket(sock, server_hostname=address.split(':')[0]) as ssock:
                     cert = ssock.getpeercert(True)
