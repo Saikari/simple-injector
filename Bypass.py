@@ -1,5 +1,4 @@
-from ctypes import byref, windll, sizeof, Structure, c_void_p, c_ulong
-from ctypes import wintypes
+from ctypes import byref, windll, sizeof, Structure, c_void_p, c_ulong, wintypes
 from time import sleep
 from typing import Optional
 from Injector import Injector
