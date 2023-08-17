@@ -1,5 +1,5 @@
 from sys import argv
-from PyQt6.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication
 from injectorMW import injectorMW
 
 app = QApplication(argv)
