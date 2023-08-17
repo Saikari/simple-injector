@@ -201,14 +201,10 @@ class CertificateGenerator:
             private_key = p12[0]
             signature = self.get_signature(check, private_key)
             public_key = p12[1].public_key()
-            h = hashes.Hash(hashes.SHA256())
-            h.update(data)
-            digest = h.finalize()
             public_key.verify(signature, data,             padding.PSS(
                 mgf=padding.MGF1(hashes.SHA256()),
                 salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256())
+            ), hashes.SHA256())
             self.logger.info("Signature verified successfully.")
             self.logger.debug("Signature verification details: %s", str(signature))
             return True
