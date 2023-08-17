@@ -3,7 +3,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QListWidget, QListWidgetItem, QMessageBox, QFileDialog
 from psutil import process_iter, STATUS_RUNNING
 from win32gui import FindWindow
-
 from Bypass import Bypass
 
 
