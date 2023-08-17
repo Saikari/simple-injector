@@ -60,7 +60,14 @@ class VMProtectActivation:
             else:
                 raise Exception("Unsupported architecture: " + arch)
         elif os_name == 'Darwin':
-            lib = CDLL('/path/to/library.dylib')
+            dll_path = 'OSX/libVMProtectSDK.dylib'
+        elif os_name == 'Linux':
+            if arch == '32bit':
+                dll_path = 'Linux/libVMProtectSDK32.so'
+            elif arch == '64bit':
+                dll_path = 'Linux/libVMProtectSDK64.so'
+            else:
+                raise Exception("Unsupported architecture: " + arch)
         else:
             raise Exception("Unsupported operating system: " + os_name)
         self.vmprotect_dll = CDLL(dll_path)
