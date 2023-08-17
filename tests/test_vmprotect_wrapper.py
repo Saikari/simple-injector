@@ -6,5 +6,6 @@ def vmprotect():
     return VMProtect()
 
 def test_vmprotect_functions(vmprotect):
+    print(vmprotect.vmprotect_dll.__dict__)
     assert vmprotect.vmprotect_dll.__dict__ != None
 
