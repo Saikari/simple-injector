@@ -1,6 +1,6 @@
 import os
 import pytest
-from .. import CertificateGenerator
+from ..CertificateGenerator import CertificateGenerator
 
 @pytest.fixture
 def cert_gen():
