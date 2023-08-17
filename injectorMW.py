@@ -1,4 +1,4 @@
-from ctypes import create_unicode_buffer
+from ctypes import create_unicode_buffer, windll
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QListWidget, QListWidgetItem, QMessageBox, QFileDialog
 from psutil import process_iter, STATUS_RUNNING
