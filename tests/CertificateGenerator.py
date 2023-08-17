@@ -177,7 +177,11 @@ class CertificateGenerator:
             with open(check, 'rb') as f:
                 data = f.read()
             p12 = crypto.load_pkcs12(open(self.real, 'rb').read(), self.password)
-            private_key_bytes = p12.get_privatekey().to_pem()
+            private_key_bytes = p12.get_privatekey().to_cryptography_key().private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
             private_key = load_pem_private_key(private_key_bytes, password=None)
             crypto.verify(p12.get_certificate(), data, private_key.public_key(), 'sha256')
             print("Signature verified successfully.")
