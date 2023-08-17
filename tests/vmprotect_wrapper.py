@@ -1,4 +1,4 @@
-from ctypes import byref, c_wchar_p, c_uint8, c_char, c_int, c_void_p, c_wchar, c_int32, POINTER, c_char_p, Structure, \
+from ctypes import byref, c_wchar_p, c_char, c_int, c_void_p, c_wchar, c_uint8, c_uint16, c_int32, POINTER, c_char_p, Structure, \
     CDLL, c_bool
 import platform
 
