@@ -1,5 +1,5 @@
 from os import path
-from pytest import fixture
+from pytest import fixture, capfd
 from CertificateGenerator import CertificateGenerator
 
 
@@ -36,6 +36,6 @@ def test_check_signature_verification(cert_gen):
     cert_gen.real = "dzen.ru.pfx"
     cert_gen.password = "password"
     cert_gen.Check(fileout)
-    captured = capsys.readouterr()
-    assert "Signature verified successfully." == captured.out
+    out, err = capfd.readouterr()
+    assert "Signature verified successfully." in out
 
