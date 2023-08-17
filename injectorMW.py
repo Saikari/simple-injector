@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QMainWindow, QListWidget, QListWidgetItem, QMessageB
 from psutil import process_iter, STATUS_RUNNING
 from win32gui import FindWindow
 
-from Bypass import *
+from Bypass import Bypass
 
 
 class injectorMW(QMainWindow):
