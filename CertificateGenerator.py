@@ -1,15 +1,23 @@
 from os import chdir, rmdir
-from ssl import SSLError, create_connection, SSLContext, PROTOCOL_TLS
+from ssl import SSLError, SSLContext, PROTOCOL_TLS_CLIENT
+import ssl
 from random import randint, choice
 from string import ascii_letters, digits
-from socket import gaierror, timeout
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
-from cryptography.x509.oid import NameOID
 from OpenSSL import crypto
+
+import os
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
+
+import requests
+import logging
+import socket
+logging.basicConfig(level=logging.DEBUG, filename='certificate_generator.log', filemode='w',
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+
 
 
 class CertificateGenerator:
@@ -22,6 +30,27 @@ class CertificateGenerator:
         self.verify = verify
         self.debugging = False
         self.debugWriter = None
+
+        # Create logger
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.DEBUG)
+
+        # Create console handler with a higher log level
+        consoleHandler = logging.StreamHandler()
+        consoleHandler.setLevel(logging.INFO)
+
+        # Create file handler which logs even debug messages
+        fileHandler = logging.FileHandler('certificate_generator.log')
+        fileHandler.setLevel(logging.DEBUG)
+
+        # Create formatter and add it to the handlers
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        consoleHandler.setFormatter(formatter)
+        fileHandler.setFormatter(formatter)
+
+        # Add the handlers to the logger
+        self.logger.addHandler(consoleHandler)
+        self.logger.addHandler(fileHandler)
 
     def printDebug(self, format, *args):
         try:
@@ -46,47 +75,50 @@ class CertificateGenerator:
         except Exception as e:
             print("An error occurred during RandStringBytes:", str(e))
 
-    def GenerateCert(self, domain, inputFile):
+    def GenerateCert(self, domain):
         try:
-            rootKey = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+            rootKey = crypto.PKey()
+            rootKey.generate_key(crypto.TYPE_RSA, 4096)
             certs, err = self.GetCertificatesPEM(domain + ":443")
             if err is not None:
-                chdir("..")
-                foldername = inputFile.split(".")
-                rmdir(foldername[0])
                 raise Exception(f"Error: The domain: {domain} does not exist or "
-                                "is not accessible from the host you are compiling on")
-            cert = x509.load_pem_x509_certificate(certs.encode(), default_backend())
+                                f"is not accessible from the host you are compiling on. {err}")
+            cert = crypto.load_certificate(crypto.FILETYPE_PEM, certs)
             self.keyToFile(domain + ".key", rootKey)
-            SubjectTemplate = x509.CertificateBuilder().subject_name(x509.Name([
-                x509.NameAttribute(NameOID.COMMON_NAME,
-                                   cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value)
-            ])).issuer_name(x509.Name([
-                x509.NameAttribute(NameOID.COMMON_NAME,
-                                   cert.issuer.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value)
-            ])).not_valid_before(cert.not_valid_before).not_valid_after(cert.not_valid_after).serial_number(
-                cert.serial_number).public_key(rootKey.public_key()).add_extension(
-                x509.BasicConstraints(ca=True, path_length=None), critical=True).add_extension(
-                x509.KeyUsage(digital_signature=True, key_cert_sign=True, key_encipherment=True,
-                              content_commitment=True, data_encipherment=True), critical=True).add_extension(
-                x509.ExtendedKeyUsage([x509.ExtendedKeyUsageOID.SERVER_AUTH, x509.ExtendedKeyUsageOID.CLIENT_AUTH]),
-                critical=True).sign(rootKey, hashes.SHA256(), default_backend())
-            derBytes = SubjectTemplate.public_bytes(serialization.Encoding.DER)
+            subject = crypto.X509Req()
+            for component in cert.get_subject().get_components():
+                setattr(subject.get_subject(), component[0].decode(), component[1].decode())
+            print(cert.get_subject().get_components())
+            print(subject.get_subject().get_components())
+            subject.set_pubkey(rootKey)
+            subject.sign(rootKey, 'sha256')
+
+            issuer = subject
+
+            cert = crypto.X509()
+            cert.set_subject(subject.get_subject())
+            cert.set_issuer(issuer.get_subject())
+            cert.set_pubkey(subject.get_pubkey())
+            cert.gmtime_adj_notBefore(0)
+            cert.gmtime_adj_notAfter(365 * 24 * 60 * 60)
+            cert.set_serial_number(1000)
+            cert.sign(rootKey, 'sha256')
+
+            derBytes = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
             self.certToFile(domain + ".pem", derBytes)
-        except (SSLError, ConnectionRefusedError, gaierror, timeout) as e:
-            print("An error occurred during certificate generation:", str(e))
+            self.logger.info("Certificate generated successfully.")
+        except (SSLError, ConnectionRefusedError) as e:
+            self.logger.error("An error occurred during certificate generation: %s", str(e))
         except Exception as e:
-            print("An error occurred during certificate generation:", str(e))
+            self.logger.error("An error occurred during certificate generation: %s", str(e))
         else:
-            print("Certificate generated successfully.")
+            self.logger.debug("Certificate details: %s", str(cert))
 
     @staticmethod
     def keyToFile(filename, key):
         try:
             with open(filename, "wb") as file:
-                file.write(
-                    key.private_bytes(encoding=serialization.Encoding.PEM, format=serialization.PrivateFormat.PKCS8,
-                                      encryption_algorithm=serialization.NoEncryption()))
+                file.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
         except Exception as e:
             print("An error occurred during keyToFile:", str(e))
 
@@ -101,19 +133,16 @@ class CertificateGenerator:
     @staticmethod
     def GetCertificatesPEM(address):
         try:
-            conn = create_connection((address, 443))
-            context = SSLContext(PROTOCOL_TLS)
-            sock = context.wrap_socket(conn, server_hostname=address)
-            certs = sock.getpeercert(True)
-            sock.close()
-            b = b""
-            for cert in certs:
-                b += cert[1]
-            return b.decode(), None
-        except (SSLError, ConnectionRefusedError, gaierror, timeout) as e:
+            context = ssl.create_default_context() #SSLContext(PROTOCOL_TLS_CLIENT)
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            with socket.create_connection((address.split(':')[0], 443)) as sock:
+                with context.wrap_socket(sock, server_hostname=address.split(':')[0]) as ssock:
+                    cert = ssock.getpeercert(True)
+            return crypto.dump_certificate(crypto.FILETYPE_PEM,
+                                           crypto.load_certificate(crypto.FILETYPE_ASN1, cert)), None
+        except (socket.gaierror, socket.timeout, SSLError, crypto.Error) as e:
             raise Exception(f"Error getting certificates for {address}: {str(e)}")
-        except Exception as e:
-            print("An error occurred during GetCertificatesPEM:", str(e))
 
     @staticmethod
     def GeneratePFK(password, domain):
@@ -132,8 +161,8 @@ class CertificateGenerator:
             p12.set_privatekey(key)
             p12.set_certificate(cert)
             p12.set_ca_certificates([cert])
-            p12.set_friendlyname(domain)
-            pfx_data = p12.export(password)
+            p12.set_friendlyname(domain.encode())
+            pfx_data = p12.export(password.encode())
             with open(domain + ".pfx", "wb") as file:
                 file.write(pfx_data)
         except crypto.Error as e:
@@ -144,12 +173,20 @@ class CertificateGenerator:
         try:
             with open(pfx, 'rb') as f:
                 pfx_data = f.read()
-            p12 = crypto.load_pkcs12(pfx_data, password)
-            signed_data = crypto.sign(p12.get_privatekey(), p12.get_certificate(), open(filein, 'rb').read(), 'sha256')
+            p12 = load_pkcs12(pfx_data, password.encode())
+            private_key = p12.key
+            with open(filein, 'rb') as f:
+                data = f.read()
+            signature = private_key.sign(
+                data,
+                padding.PKCS1v15(),
+                hashes.SHA256()
+            )
             with open(fileout, 'wb') as f:
-                f.write(signed_data)
-        except (crypto.Error, Exception) as e:
+                f.write(data + signature)
+        except Exception as e:
             print("An error occurred during SignExecutable:", str(e))
+
 
     def Check(self, check):
         try:
