@@ -9,7 +9,7 @@ def cert_gen():
 
 
 def test_generate_cert(cert_gen):
-    cert_gen.GenerateCert("dzen.ru", "inputFile")
+    cert_gen.GenerateCert("dzen.ru")
     assert path.exists("dzen.ru.key")
     assert path.exists("dzen.ru.pem")
 
