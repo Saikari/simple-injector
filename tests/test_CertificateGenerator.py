@@ -24,3 +24,18 @@ def test_sign_executable(cert_gen):
         f.write("test")
     cert_gen.SignExecutable("password", "dzen.ru.pfx", "testfile.txt", "signed_testfile.txt")
     assert path.exists("signed_testfile.txt")
+
+def test_check_signature_verification(cert_gen):
+    # Create a temporary file and sign it
+    filein = "testfile.txt"
+    fileout = "signed_testfile.txt"
+    with open(filein, "w") as f:
+        f.write("test data")
+    cert_gen.SignExecutable("password", "domain.pfx", filein, fileout)
+    # Verify the signature
+    cert_gen.real = "dzen.ru.pfx"
+    cert_gen.password = "password"
+    cert_gen.Check(fileout)
+    out, err = capfd.readouterr()
+    assert "Signature verified successfully." in out
+
