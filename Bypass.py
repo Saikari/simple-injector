@@ -4,10 +4,9 @@ from time import sleep
 from typing import Optional
 from Injector import Injector
 
-PROCESS_ALL_ACCESS = 0x1F0FFF
-
 
 class Bypass:
+    PROCESS_ALL_ACCESS = 0x1F0FFF
     @staticmethod
     def SuspendProtection(hProcess: wintypes.HANDLE, pid: int, protAddr: int) -> bool:
         te32 = Structure()
@@ -116,10 +115,10 @@ class Bypass:
 
             dwThreadId = windll.user32.GetWindowThreadProcessId(hwnd, None)
             dwProcID = wintypes.DWORD(dwThreadId)
-            while not windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value):
+            while not windll.kernel32.OpenProcess(self.PROCESS_ALL_ACCESS, False, dwProcID.value):
                 Bypass.Bedge(1000)
 
-            handle = windll.kernel32.OpenProcess(PROCESS_ALL_ACCESS, False, dwProcID.value)
+            handle = windll.kernel32.OpenProcess(self.PROCESS_ALL_ACCESS, False, dwProcID.value)
 
             # Restore bytes of these hooked function
             Bypass.Patch(Bypass.GetLibraryProcAddress("ntdll.dll", "LdrInitializeThunk"),
