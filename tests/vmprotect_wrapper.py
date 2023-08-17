@@ -1,6 +1,7 @@
-from ctypes import byref, c_wchar_p, c_char, c_int, c_void_p, c_wchar, c_uint8, c_uint16, c_int32, POINTER, c_char_p, Structure, \
-    CDLL, c_bool
+from ctypes import byref, c_wchar_p, c_char, c_int, c_void_p, c_wchar, \
+c_uint8, c_uint16, c_int32, POINTER, c_char_p, Structure, CDLL, c_bool
 import platform
+
 
 class VMProtectSerialStateFlags:
     SERIAL_STATE_SUCCESS = 0x0
@@ -33,6 +34,7 @@ class VMProtectDate(Structure):
         ("bMonth", c_uint8),
         ("bDay", c_uint8)
     ]
+
 
 class VMProtectSerialNumberData(Structure):
     _fields_ = [
