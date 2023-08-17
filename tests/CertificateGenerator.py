@@ -4,12 +4,11 @@ from string import ascii_letters, digits
 from OpenSSL import crypto
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
 from cryptography.hazmat.primitives.serialization.pkcs12 import load_key_and_certificates
 from logging import basicConfig, Formatter, StreamHandler, getLogger, INFO, DEBUG, FileHandler
 from socket import create_connection, gaierror, timeout
-from Crypto.PublicKey import RSA
-from Crypto.Signature import pkcs1_15
-from Crypto.Hash import SHA256
+from hashlib import sha256
 
 basicConfig(level=DEBUG, filename='certificate_generator.log', filemode='w',
             format='%(asctime)s - %(levelname)s - %(message)s')
@@ -155,36 +154,70 @@ class CertificateGenerator:
         except crypto.Error as e:
             print("An error occurred during GeneratePFK:", str(e))
 
-    @staticmethod
-    def SignExecutable(password, pfx, filein, fileout):
+    def SignExecutable(self, password, pfx, filein, fileout):
         try:
             with open(pfx, 'rb') as f:
                 pfx_data = f.read()
-            private_key = RSA.import_key(pfx_data, passphrase=password)
+
+            p12 = load_key_and_certificates(pfx_data, password.encode())
+
+            private_key = p12[0]
             with open(filein, 'rb') as f:
                 data = f.read()
-            h = SHA256.new(data)
-            signature = pkcs1_15.new(private_key).sign(h)
+
+            signature = private_key.sign(data, padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+                                 hashes.SHA256())
+
             with open(fileout, 'wb') as f:
                 f.write(data + signature)
+        except SSLError as e:
+            print("An error occurred during SignExecutable:", str(e))
         except Exception as e:
             print("An error occurred during SignExecutable:", str(e))
 
-    def Check(self, check):
+    def get_signature(self, filename, private_key) -> bytes:
+        with open(filename, "rb") as f:
+            data = f.read()
+        signature = private_key.sign(
+            data,
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        self.logger.info("Signature generated successfully.")
+        self.logger.debug("Signature details: %s", str(signature))
+        return signature
+
+    def Check(self, check) -> bool:
         try:
             with open(check, 'rb') as f:
                 data = f.read()
-            p12 = crypto.load_pkcs12(open(self.real, 'rb').read(), self.password)
-            private_key = p12.get_privatekey().to_cryptography_key()
-            public_key = p12.get_certificate().public_key().to_cryptography_key()
-            h = hashes.SHA256()
+            p12 = load_key_and_certificates(open(self.real, 'rb').read(), self.password.encode())
+            private_key = p12[0]
+            signature = self.get_signature(check, private_key)
+            public_key = p12[1].public_key()
+            h = hashes.Hash(hashes.SHA256())
             h.update(data)
-            signature = private_key.sign(h.finalize(), padding.PKCS1v15(), hashes.SHA256())
-            public_key.verify(signature, h.finalize(), padding.PKCS1v15(), hashes.SHA256())
-            print("Signature verified successfully.")
+            digest = h.finalize()
+            public_key.verify(signature, data,             padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256())
+            self.logger.info("Signature verified successfully.")
+            self.logger.debug("Signature verification details: %s", str(signature))
+            return True
         except FileNotFoundError as e:
-            print("Error: File not found:", str(e))
+            self.logger.error("Error: File not found:", str(e))
+            return False
         except crypto.Error as e:
-            print("Error occurred during signature verification:", str(e))
+            self.logger.error("Error occurred during signature verification:", str(e))
+            return False
         except Exception as e:
-            print("An unexpected error occurred during signature verification:", str(e))
+            self.logger.error("An unexpected error occurred during signature verification:", str(e))
+            return False
