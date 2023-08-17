@@ -27,21 +27,21 @@ class VMProtectActivationFlags:
     ACTIVATION_NOT_AVAILABLE = 10
 
 
-class VMProtectDate:
-    def __init__(self, wYear, bMonth, bDay):
-        self.wYear = wYear
-        self.bMonth = bMonth
-        self.bDay = bDay
-
+class VMProtectDate(Structure):
+    _fields_ = [
+        ("wYear", c_int32)
+        ("bMonth", c_int32)
+        ("bDay", c_int32)
+    ]
 
 class VMProtectSerialNumberData(Structure):
     _fields_ = [
         ("nState", c_int32),
         ("wUserName", c_wchar * 256),
         ("wEMail", c_wchar * 256),
-        ("dtExpire", POINTER(VMProtectDate)),
+        ("dtExpire", VMProtectDate),
         ("bRunningTime", c_int32),
-        ("dtMaxBuild", POINTER(VMProtectDate)),
+        ("dtMaxBuild", VMProtectDate),
         ("nUserDataLength", c_uint8),
         ("bUserData", c_char * 255)
     ]
