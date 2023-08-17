@@ -13,11 +13,9 @@ from cryptography.hazmat.primitives.serialization.pkcs12 import load_pkcs12
 import requests
 import logging
 import socket
+
 logging.basicConfig(level=logging.DEBUG, filename='certificate_generator.log', filemode='w',
                     format='%(asctime)s - %(levelname)s - %(message)s')
-
-
-
 
 
 class CertificateGenerator:
@@ -75,26 +73,27 @@ class CertificateGenerator:
         except Exception as e:
             print("An error occurred during RandStringBytes:", str(e))
 
-    def GenerateCert(self, domain):
+    def GeneratePKey(self, domain) -> crypto.PKey:
+        rootKey = crypto.PKey()
+        rootKey.generate_key(crypto.TYPE_RSA, 4096)
+        self.keyToFile(domain + ".key", rootKey)
+        return rootKey
+
+    def GenerateCert(self, domain, rootKey=None) -> crypto.X509:
         try:
-            rootKey = crypto.PKey()
-            rootKey.generate_key(crypto.TYPE_RSA, 4096)
             certs, err = self.GetCertificatesPEM(domain + ":443")
             if err is not None:
                 raise Exception(f"Error: The domain: {domain} does not exist or "
                                 f"is not accessible from the host you are compiling on. {err}")
             cert = crypto.load_certificate(crypto.FILETYPE_PEM, certs)
-            self.keyToFile(domain + ".key", rootKey)
+            if rootKey is None:
+                rootKey = self.GeneratePKey(domain)
             subject = crypto.X509Req()
             for component in cert.get_subject().get_components():
                 setattr(subject.get_subject(), component[0].decode(), component[1].decode())
-            print(cert.get_subject().get_components())
-            print(subject.get_subject().get_components())
             subject.set_pubkey(rootKey)
             subject.sign(rootKey, 'sha256')
-
             issuer = subject
-
             cert = crypto.X509()
             cert.set_subject(subject.get_subject())
             cert.set_issuer(issuer.get_subject())
@@ -103,16 +102,15 @@ class CertificateGenerator:
             cert.gmtime_adj_notAfter(365 * 24 * 60 * 60)
             cert.set_serial_number(1000)
             cert.sign(rootKey, 'sha256')
-
             derBytes = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
             self.certToFile(domain + ".pem", derBytes)
             self.logger.info("Certificate generated successfully.")
+            self.logger.debug("Certificate details: %s", str(cert))
+            return cert
         except (SSLError, ConnectionRefusedError) as e:
             self.logger.error("An error occurred during certificate generation: %s", str(e))
         except Exception as e:
             self.logger.error("An error occurred during certificate generation: %s", str(e))
-        else:
-            self.logger.debug("Certificate details: %s", str(cert))
 
     @staticmethod
     def keyToFile(filename, key):
@@ -133,7 +131,7 @@ class CertificateGenerator:
     @staticmethod
     def GetCertificatesPEM(address):
         try:
-            context = ssl.create_default_context() #SSLContext(PROTOCOL_TLS_CLIENT)
+            context = ssl.create_default_context()  # SSLContext(PROTOCOL_TLS_CLIENT)
             context.check_hostname = False
             context.verify_mode = ssl.CERT_NONE
             with socket.create_connection((address.split(':')[0], 443)) as sock:
@@ -144,19 +142,10 @@ class CertificateGenerator:
         except (socket.gaierror, socket.timeout, SSLError, crypto.Error) as e:
             raise Exception(f"Error getting certificates for {address}: {str(e)}")
 
-    @staticmethod
-    def GeneratePFK(password, domain):
+    def GeneratePFK(self, password, domain) -> crypto.PKCS12:
         try:
-            key = crypto.PKey()
-            key.generate_key(crypto.TYPE_RSA, 2048)
-            cert = crypto.X509()
-            cert.get_subject().CN = domain
-            cert.set_serial_number(1000)
-            cert.gmtime_adj_notBefore(0)
-            cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
-            cert.set_issuer(cert.get_subject())
-            cert.set_pubkey(key)
-            cert.sign(key, 'sha256')
+            key = self.GeneratePKey(domain)
+            cert = self.GenerateCert(domain, key)
             p12 = crypto.PKCS12()
             p12.set_privatekey(key)
             p12.set_certificate(cert)
@@ -165,6 +154,7 @@ class CertificateGenerator:
             pfx_data = p12.export(password.encode())
             with open(domain + ".pfx", "wb") as file:
                 file.write(pfx_data)
+            return p12
         except crypto.Error as e:
             print("An error occurred during GeneratePFK:", str(e))
 
@@ -187,7 +177,6 @@ class CertificateGenerator:
         except Exception as e:
             print("An error occurred during SignExecutable:", str(e))
 
-
     def Check(self, check):
         try:
             with open(check, 'rb') as f:
@@ -203,3 +192,9 @@ class CertificateGenerator:
             print("Error occurred during signature verification:", str(e))
         except Exception as e:
             print("An unexpected error occurred during signature verification:", str(e))
+
+
+cert_gen = CertificateGenerator("outFile", "inputFile", "dzen.ru", "password", "real", "verify")
+cert_gen.GenerateCert("dzen.ru")
+cert_gen.GeneratePFK("password", "dzen.ru")
+cert_gen.SignExecutable("password", "dzen.ru.pfx", "inputFile", "outputFile")
