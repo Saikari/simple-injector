@@ -1,0 +1,34 @@
+2023-08-18 23:19:33,175 - INFO - Set privilege 4
+2023-08-18 23:19:33,176 - INFO - Set privilege 5
+2023-08-18 23:19:33,177 - INFO - Added privilege 8
+2023-08-18 23:19:33,178 - INFO - Set privilege 9
+2023-08-18 23:19:33,179 - INFO - Set privilege 10
+2023-08-18 23:19:33,180 - INFO - Set privilege 11
+2023-08-18 23:19:33,181 - INFO - Set privilege 12
+2023-08-18 23:19:33,181 - INFO - Set privilege 13
+2023-08-18 23:19:33,183 - INFO - Set privilege 14
+2023-08-18 23:19:33,184 - INFO - Set privilege 15
+2023-08-18 23:19:33,184 - INFO - Added privilege 17
+2023-08-18 23:19:33,185 - INFO - Set privilege 18
+2023-08-18 23:19:33,186 - INFO - Set privilege 19
+2023-08-18 23:19:33,187 - INFO - Added privilege 20
+2023-08-18 23:19:33,187 - INFO - Set privilege 22
+2023-08-18 23:19:33,188 - INFO - Set privilege 23
+2023-08-18 23:19:33,189 - INFO - Set privilege 24
+2023-08-18 23:19:33,190 - INFO - Set privilege 25
+2023-08-18 23:19:33,191 - INFO - Set privilege 28
+2023-08-18 23:19:33,192 - INFO - Set privilege 29
+2023-08-18 23:19:33,193 - INFO - Set privilege 30
+2023-08-18 23:19:33,193 - INFO - Set privilege 33
+2023-08-18 23:19:33,194 - INFO - Set privilege 34
+2023-08-18 23:19:33,195 - INFO - Set privilege 35
+2023-08-18 23:19:33,195 - INFO - Set privilege 36
+2023-08-18 23:19:33,196 - INFO - Proc pid = 6428
+2023-08-18 23:19:33,196 - INFO - Allowed access to remote proc = 0X2000000
+2023-08-18 23:19:33,197 - INFO - Handle 1936
+2023-08-18 23:19:33,383 - INFO - [SuspendProtection] [SUCCESS] Thread suspended
+2023-08-18 23:19:33,383 - DEBUG - [Inject] [DEBUG] 44 bytes written to process 1936
+2023-08-18 23:19:33,384 - DEBUG - [Inject] [DEBUG] Waiting for thread 4732 to finish
+2023-08-18 23:19:33,384 - DEBUG - [Inject] [DEBUG] Exit code: c_ulong(1584070656)
+2023-08-18 23:19:33,385 - INFO - [Inject] [WARNING] Injection succeeded but exit code is c_ulong(1584070656).
+2023-08-18 23:19:33,385 - INFO - [UnSuspendThread] [SUCCESS] Thread resumed

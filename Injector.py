@@ -34,6 +34,7 @@ class Injector:
         self.kernel32 = windll.kernel32
         self.pid = c_ulong()
         self.handle = None
+        self.path = None
 
     @staticmethod
     def create_process(path: str) -> int:
@@ -123,8 +124,8 @@ class Injector:
         if not self.kernel32.VirtualProtectEx(self.handle, addr, size, old_protect, byref(old_protect)):
             raise WinError()
 
-    @staticmethod
-    def inject_dll(path: str, process_handle: int) -> LPVOID:
+    def inject_dll(self, path: str, process_handle: int) -> LPVOID:
+        self.path = path
         """Inject a DLL into the remote process."""
         # Check if the DLL file exists
         if not path.isfile(path):
@@ -139,8 +140,8 @@ class Injector:
 
         # Sign the DLL using the CertificateGenerator class
         cert_generator = CertificateGenerator.CertificateGenerator(
-                                            outFile="certificate.pem", inputFile="private_key.pem",
-                                            domain="example.com", password="password", real=True, verify=True)
+            outFile="certificate.pem", inputFile="private_key.pem",
+            domain="example.com", password="password", real=True, verify=True)
         cert_generator.GenerateCert("example.com", "inputFile.pem")
         signed_dll_path = cert_generator.certToFile("signed_dll.dll", path)
 
@@ -181,7 +182,6 @@ class Injector:
         module_handle = windll.kernel32.GetModuleHandleW(signed_dll_path.encode("utf-16le"))
         if not module_handle:
             raise WinError()
-
         return module_handle
 
     def call_from_injected(self, path: str, dll_addr: LPVOID, function: str, args: bytes) -> None:
